@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Upload</title>
+</head>
+<body>
+    <h2>Test File Upload</h2>
+    <input type="file" id="fileInput">
+    <button onclick="uploadFile()">Upload</button>
+    <pre id="result"></pre>
+
+    <script>
+        const token = localStorage.getItem('token');
+        
+        async function uploadFile() {
+            const file = document.getElementById('fileInput').files[0];
+            if (!file) {
+                alert('Select a file first');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('title', 'Test Upload');
+            formData.append('author', 'Test Author');
+            formData.append('subject', 'Test');
+            formData.append('year', '2024');
+            formData.append('keywords', 'test');
+            formData.append('access_level', 'all');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/contents/upload', {
+                    method: 'POST',
+                    headers: {
+                        'x-auth-token': token
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

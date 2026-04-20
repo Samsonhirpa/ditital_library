@@ -1,0 +1,28 @@
+.dashboard-layout {
+    min-height: 100vh;
+}
+
+.content-wrapper {
+    margin-left: 280px;
+    margin-top: 60px;
+    transition: margin-left 0.3s ease;
+    padding: 20px;
+    min-height: calc(100vh - 60px);
+    background: #f1f5f9;
+}
+
+.content-wrapper.sidebar-collapsed {
+    margin-left: 80px;
+}
+
+.content {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .content-wrapper {
+        margin-left: 0;
+        padding: 15px;
+    }
+}
