@@ -36,6 +36,75 @@ async function setupDatabase() {
     `);
     console.log('✅ users.library_id column ensured');
 
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS library_settings (
+        id SERIAL PRIMARY KEY,
+        library_id INT UNIQUE REFERENCES libraries(id) ON DELETE CASCADE,
+        loan_days INT NOT NULL DEFAULT 14,
+        fine_per_day DECIMAL(10,2) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ library_settings table created');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS physical_members (
+        id SERIAL PRIMARY KEY,
+        library_id INT REFERENCES libraries(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        phone VARCHAR(50) NOT NULL,
+        address TEXT NOT NULL,
+        id_number VARCHAR(100) NOT NULL,
+        status VARCHAR(30) NOT NULL DEFAULT 'PENDING_MANAGER',
+        created_by INT REFERENCES users(id),
+        reviewed_by INT REFERENCES users(id),
+        reviewed_at TIMESTAMP,
+        rejection_reason TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (library_id, id_number)
+      )
+    `);
+    console.log('✅ physical_members table created');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS physical_books (
+        id SERIAL PRIMARY KEY,
+        library_id INT REFERENCES libraries(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        author VARCHAR(255),
+        isbn VARCHAR(50),
+        copies_total INT NOT NULL DEFAULT 1,
+        copies_available INT NOT NULL DEFAULT 1,
+        is_available BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (library_id, isbn)
+      )
+    `);
+    console.log('✅ physical_books table created');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS physical_transactions (
+        id SERIAL PRIMARY KEY,
+        library_id INT REFERENCES libraries(id) ON DELETE CASCADE,
+        member_id INT NOT NULL REFERENCES physical_members(id),
+        book_id INT NOT NULL REFERENCES physical_books(id),
+        issue_by INT REFERENCES users(id),
+        returned_by INT REFERENCES users(id),
+        issue_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        due_date TIMESTAMP NOT NULL,
+        return_date TIMESTAMP,
+        fine_per_day DECIMAL(10,2) NOT NULL DEFAULT 1,
+        fine_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ physical_transactions table created');
+
     // Create digital_contents table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS digital_contents (
