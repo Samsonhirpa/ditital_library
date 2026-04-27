@@ -20,13 +20,13 @@ router.post('/register', async (req, res) => {
     
     // Create user (default role: member)
     const result = await pool.query(
-      'INSERT INTO users (email, password_hash, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, full_name, role',
+      'INSERT INTO users (email, password_hash, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, full_name, role, library_id',
       [email, hashedPassword, full_name, 'member']
     );
     
     // Create token
     const token = jwt.sign(
-      { id: result.rows[0].id, email: result.rows[0].email, role: result.rows[0].role },
+      { id: result.rows[0].id, email: result.rows[0].email, role: result.rows[0].role, library_id: result.rows[0].library_id },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -55,7 +55,7 @@ router.post('/login', async (req, res) => {
     }
     
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role, library_id: user.library_id },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -66,7 +66,8 @@ router.post('/login', async (req, res) => {
         id: user.id,
         email: user.email,
         full_name: user.full_name,
-        role: user.role
+        role: user.role,
+        library_id: user.library_id
       }
     });
   } catch (err) {
