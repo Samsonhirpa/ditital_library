@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
+import PhysicalLibraryLanding from './pages/PhysicalLibraryLanding';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Catalog from './pages/Catalog';
@@ -26,6 +27,34 @@ import MembersPage from './pages/physical/MembersPage';
 import OverdueReturnsPage from './pages/physical/OverdueReturnsPage';
 import FeeSettingsPage from './pages/physical/FeeSettingsPage';
 
+class RouteErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    console.error('Route render failed:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '2rem', textAlign: 'center' }}>
+          <h2>Something went wrong while loading this page.</h2>
+          <p>Please refresh and try again.</p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, isAuthenticated } = useAuth();
@@ -47,6 +76,11 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/physical-library" element={
+            <RouteErrorBoundary>
+              <PhysicalLibraryLanding />
+            </RouteErrorBoundary>
+          } />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/catalog" element={<Catalog />} />
