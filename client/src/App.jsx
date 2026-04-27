@@ -19,6 +19,12 @@ import CatalogerDashboard from './pages/CatalogerDashboard';
 import CatalogerHome from './pages/cataloger/CatalogerHome';
 import CatalogerBooksPage from './pages/cataloger/CatalogerBooksPage';
 import CatalogerCategoriesPage from './pages/cataloger/CatalogerCategoriesPage';
+import PhysicalWorkspace from './pages/physical/PhysicalWorkspace';
+import IssueBookPage from './pages/physical/IssueBookPage';
+import ReturnBookPage from './pages/physical/ReturnBookPage';
+import MembersPage from './pages/physical/MembersPage';
+import OverdueReturnsPage from './pages/physical/OverdueReturnsPage';
+import FeeSettingsPage from './pages/physical/FeeSettingsPage';
 
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -85,6 +91,19 @@ function App() {
     <LibraryAdminDashboard />
   </ProtectedRoute>
 } />
+
+<Route path="/physical-librarian/*" element={
+  <ProtectedRoute allowedRoles={['physical_librarian', 'physical_manager', 'manager', 'librarian']}>
+    <PhysicalWorkspace />
+  </ProtectedRoute>
+}>
+  <Route index element={<Navigate to="issue" replace />} />
+  <Route path="issue" element={<IssueBookPage />} />
+  <Route path="return" element={<ReturnBookPage />} />
+  <Route path="members" element={<MembersPage />} />
+  <Route path="overdue" element={<OverdueReturnsPage />} />
+  <Route path="settings" element={<FeeSettingsPage />} />
+</Route>
 
 
 <Route path="/cataloger" element={
