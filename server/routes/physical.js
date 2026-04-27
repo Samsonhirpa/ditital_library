@@ -59,9 +59,35 @@ const ensurePhysicalWorkflowTables = async () => {
       library_id INT UNIQUE REFERENCES libraries(id) ON DELETE CASCADE,
       loan_days INT NOT NULL DEFAULT 14,
       fine_per_day DECIMAL(10,2) NOT NULL DEFAULT 1,
+      damage_fee_low DECIMAL(10,2) NOT NULL DEFAULT 0,
+      damage_fee_medium DECIMAL(10,2) NOT NULL DEFAULT 0,
+      damage_fee_high DECIMAL(10,2) NOT NULL DEFAULT 0,
+      lost_fee_mode VARCHAR(20) NOT NULL DEFAULT 'book_sale',
+      lost_fee_custom_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
+  `);
+
+  await pool.query(`
+    ALTER TABLE library_settings
+    ADD COLUMN IF NOT EXISTS damage_fee_low DECIMAL(10,2) NOT NULL DEFAULT 0
+  `);
+  await pool.query(`
+    ALTER TABLE library_settings
+    ADD COLUMN IF NOT EXISTS damage_fee_medium DECIMAL(10,2) NOT NULL DEFAULT 0
+  `);
+  await pool.query(`
+    ALTER TABLE library_settings
+    ADD COLUMN IF NOT EXISTS damage_fee_high DECIMAL(10,2) NOT NULL DEFAULT 0
+  `);
+  await pool.query(`
+    ALTER TABLE library_settings
+    ADD COLUMN IF NOT EXISTS lost_fee_mode VARCHAR(20) NOT NULL DEFAULT 'book_sale'
+  `);
+  await pool.query(`
+    ALTER TABLE library_settings
+    ADD COLUMN IF NOT EXISTS lost_fee_custom_amount DECIMAL(10,2) NOT NULL DEFAULT 0
   `);
 
   await pool.query(`
@@ -96,9 +122,30 @@ const ensurePhysicalWorkflowTables = async () => {
       return_date TIMESTAMP,
       fine_per_day DECIMAL(10,2) NOT NULL DEFAULT 1,
       fine_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+      damage_level VARCHAR(10),
+      damage_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+      lost_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+      return_notes TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
+  `);
+
+  await pool.query(`
+    ALTER TABLE physical_transactions
+    ADD COLUMN IF NOT EXISTS damage_level VARCHAR(10)
+  `);
+  await pool.query(`
+    ALTER TABLE physical_transactions
+    ADD COLUMN IF NOT EXISTS damage_fee DECIMAL(10,2) NOT NULL DEFAULT 0
+  `);
+  await pool.query(`
+    ALTER TABLE physical_transactions
+    ADD COLUMN IF NOT EXISTS lost_fee DECIMAL(10,2) NOT NULL DEFAULT 0
+  `);
+  await pool.query(`
+    ALTER TABLE physical_transactions
+    ADD COLUMN IF NOT EXISTS return_notes TEXT
   `);
 };
 
@@ -196,6 +243,108 @@ router.put('/members/:id/reject', checkRole(MANAGER_ROLES), async (req, res) => 
     res.json({ message: 'Member rejected', member: result.rows[0] });
   } catch (error) {
     res.status(500).json({ message: 'Failed to reject member' });
+  }
+});
+
+router.get('/members', checkRole([...LIBRARIAN_ROLES, ...MANAGER_ROLES]), async (req, res) => {
+  try {
+    await ensurePhysicalWorkflowTables();
+
+    const result = await pool.query(
+      `SELECT *
+       FROM physical_members
+       WHERE ($1::int IS NULL OR library_id = $1)
+       ORDER BY created_at DESC`,
+      [getLibraryScope(req)]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch members' });
+  }
+});
+
+router.get('/settings', checkRole([...LIBRARIAN_ROLES, ...MANAGER_ROLES]), async (req, res) => {
+  try {
+    await ensurePhysicalWorkflowTables();
+
+    const result = await pool.query(
+      `SELECT *
+       FROM library_settings
+       WHERE ($1::int IS NULL OR library_id = $1)
+       ORDER BY CASE WHEN library_id = $1 THEN 0 ELSE 1 END
+       LIMIT 1`,
+      [getLibraryScope(req)]
+    );
+
+    res.json(
+      result.rows[0] || {
+        library_id: getLibraryScope(req),
+        loan_days: 14,
+        fine_per_day: 1,
+        damage_fee_low: 0,
+        damage_fee_medium: 0,
+        damage_fee_high: 0,
+        lost_fee_mode: 'book_sale',
+        lost_fee_custom_amount: 0
+      }
+    );
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch settings' });
+  }
+});
+
+router.put('/settings', checkRole(MANAGER_ROLES), async (req, res) => {
+  const {
+    loan_days = 14,
+    fine_per_day = 1,
+    damage_fee_low = 0,
+    damage_fee_medium = 0,
+    damage_fee_high = 0,
+    lost_fee_mode = 'book_sale',
+    lost_fee_custom_amount = 0
+  } = req.body;
+
+  if (!['book_sale', 'custom'].includes(lost_fee_mode)) {
+    return res.status(400).json({ message: 'lost_fee_mode must be "book_sale" or "custom"' });
+  }
+
+  try {
+    await ensurePhysicalWorkflowTables();
+
+    const result = await pool.query(
+      `INSERT INTO library_settings (
+         library_id, loan_days, fine_per_day,
+         damage_fee_low, damage_fee_medium, damage_fee_high,
+         lost_fee_mode, lost_fee_custom_amount, updated_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+       ON CONFLICT (library_id)
+       DO UPDATE SET
+         loan_days = EXCLUDED.loan_days,
+         fine_per_day = EXCLUDED.fine_per_day,
+         damage_fee_low = EXCLUDED.damage_fee_low,
+         damage_fee_medium = EXCLUDED.damage_fee_medium,
+         damage_fee_high = EXCLUDED.damage_fee_high,
+         lost_fee_mode = EXCLUDED.lost_fee_mode,
+         lost_fee_custom_amount = EXCLUDED.lost_fee_custom_amount,
+         updated_at = NOW()
+       RETURNING *`,
+      [
+        getLibraryScope(req),
+        Number(loan_days),
+        Number(fine_per_day),
+        Number(damage_fee_low),
+        Number(damage_fee_medium),
+        Number(damage_fee_high),
+        lost_fee_mode,
+        Number(lost_fee_custom_amount)
+      ]
+    );
+
+    res.json({ message: 'Settings updated', settings: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Failed to update settings' });
   }
 });
 
@@ -545,9 +694,51 @@ router.post('/transactions/issue', checkRole(LIBRARIAN_ROLES), async (req, res) 
   }
 });
 
+router.get('/transactions/active', checkRole([...LIBRARIAN_ROLES, ...MANAGER_ROLES]), async (req, res) => {
+  try {
+    await ensurePhysicalWorkflowTables();
+    const result = await pool.query(
+      `SELECT t.*, m.name AS member_name, b.title AS book_title
+       FROM physical_transactions t
+       JOIN physical_members m ON m.id = t.member_id
+       JOIN physical_books b ON b.id = t.book_id
+       WHERE t.return_date IS NULL
+         AND ($1::int IS NULL OR t.library_id = $1)
+       ORDER BY t.issue_date DESC`,
+      [getLibraryScope(req)]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch active transactions' });
+  }
+});
+
+router.get('/transactions/overdue', checkRole([...LIBRARIAN_ROLES, ...MANAGER_ROLES]), async (req, res) => {
+  try {
+    await ensurePhysicalWorkflowTables();
+    const result = await pool.query(
+      `SELECT t.*, m.name AS member_name, b.title AS book_title,
+              GREATEST((NOW()::date - t.due_date::date), 0) AS overdue_days,
+              GREATEST((NOW()::date - t.due_date::date), 0) * t.fine_per_day AS estimated_fine
+       FROM physical_transactions t
+       JOIN physical_members m ON m.id = t.member_id
+       JOIN physical_books b ON b.id = t.book_id
+       WHERE t.return_date IS NULL
+         AND t.due_date::date < NOW()::date
+         AND ($1::int IS NULL OR t.library_id = $1)
+       ORDER BY t.due_date ASC`,
+      [getLibraryScope(req)]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch overdue transactions' });
+  }
+});
+
 // Return book: save return_date, calculate fine_amount, and update availability.
 router.post('/transactions/:id/return', checkRole(LIBRARIAN_ROLES), async (req, res) => {
   const transactionId = req.params.id;
+  const { damage_level, is_lost, lost_fee_custom_amount, notes } = req.body;
   const client = await pool.connect();
 
   try {
@@ -572,29 +763,66 @@ router.post('/transactions/:id/return', checkRole(LIBRARIAN_ROLES), async (req, 
 
     const tx = txResult.rows[0];
 
+    const settingsResult = await client.query(
+      `SELECT *
+       FROM library_settings
+       WHERE ($1::int IS NULL OR library_id = $1)
+       ORDER BY CASE WHEN library_id = $1 THEN 0 ELSE 1 END
+       LIMIT 1`,
+      [getLibraryScope(req)]
+    );
+
+    const settings = settingsResult.rows[0] || {};
+    const damageMap = {
+      low: Number(settings.damage_fee_low || 0),
+      medium: Number(settings.damage_fee_medium || 0),
+      high: Number(settings.damage_fee_high || 0)
+    };
+    const normalizedDamage = damage_level && ['low', 'medium', 'high'].includes(damage_level) ? damage_level : null;
+    const damageFee = normalizedDamage ? damageMap[normalizedDamage] : 0;
+
+    let lostFee = 0;
+    if (is_lost) {
+      if ((settings.lost_fee_mode || 'book_sale') === 'custom') {
+        lostFee = Number(
+          lost_fee_custom_amount ?? settings.lost_fee_custom_amount ?? 0
+        );
+      } else {
+        // If your deployment tracks book sale value in a separate process/table,
+        // keep lost fee as zero here and let staff override via custom amount mode.
+        lostFee = 0;
+      }
+    }
+
     const updateResult = await client.query(
       `UPDATE physical_transactions
        SET return_date = NOW(),
-           fine_amount = CASE
+           fine_amount = (CASE
              WHEN NOW()::date > due_date::date
              THEN GREATEST((NOW()::date - due_date::date), 0) * fine_per_day
              ELSE 0
-           END,
+           END) + $3 + $4,
+           damage_level = $5,
+           damage_fee = $3,
+           lost_fee = $4,
+           return_notes = $6,
            returned_by = $1,
            updated_at = NOW()
        WHERE id = $2
        RETURNING *`,
-      [req.user.id, transactionId]
+      [req.user.id, transactionId, damageFee, lostFee, normalizedDamage, notes || null]
     );
 
-    await client.query(
-      `UPDATE physical_books
-       SET copies_available = copies_available + 1,
-           is_available = TRUE,
-           updated_at = NOW()
-       WHERE id = $1`,
-      [tx.book_id]
-    );
+    if (!is_lost) {
+      await client.query(
+        `UPDATE physical_books
+         SET copies_available = copies_available + 1,
+             is_available = TRUE,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [tx.book_id]
+      );
+    }
 
     await client.query('COMMIT');
 

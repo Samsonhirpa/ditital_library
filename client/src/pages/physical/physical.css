@@ -1,0 +1,70 @@
+.physical-workspace {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.physical-side {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem;
+  height: fit-content;
+}
+
+.physical-side a {
+  display: block;
+  padding: 0.6rem;
+  border-radius: 8px;
+  color: #0f172a;
+  text-decoration: none;
+  margin-bottom: 0.35rem;
+}
+
+.physical-side a.active {
+  background: #0f766e;
+  color: #fff;
+}
+
+.physical-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.physical-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.physical-panel input,
+.physical-panel select,
+.physical-panel textarea,
+.physical-panel button {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.physical-panel button {
+  background: #0f766e;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.physical-list {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.physical-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.7rem;
+}
