@@ -39,6 +39,9 @@ function Login() {
         case 'library_admin':
           navigate('/library-admin');
           break;
+        case 'cataloger':
+          navigate('/cataloger');
+          break;
 
          case 'member':
       navigate('/member'); 
