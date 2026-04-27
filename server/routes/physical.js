@@ -7,7 +7,9 @@ const router = express.Router();
 router.use(authMiddleware);
 
 const getLibraryScope = (req) => req.user.library_id || null;
-const CATALOG_ROLES = ['cataloger', 'librarian', 'manager'];
+const LIBRARIAN_ROLES = ['physical_librarian', 'librarian'];
+const MANAGER_ROLES = ['physical_manager', 'manager'];
+const CATALOG_ROLES = ['cataloger', ...LIBRARIAN_ROLES, ...MANAGER_ROLES];
 
 const ensureCatalogTables = async () => {
   await pool.query(`
@@ -50,8 +52,58 @@ const ensureCatalogTables = async () => {
   `);
 };
 
+const ensurePhysicalWorkflowTables = async () => {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS library_settings (
+      id SERIAL PRIMARY KEY,
+      library_id INT UNIQUE REFERENCES libraries(id) ON DELETE CASCADE,
+      loan_days INT NOT NULL DEFAULT 14,
+      fine_per_day DECIMAL(10,2) NOT NULL DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS physical_members (
+      id SERIAL PRIMARY KEY,
+      library_id INT REFERENCES libraries(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      phone VARCHAR(50) NOT NULL,
+      address TEXT NOT NULL,
+      id_number VARCHAR(100) NOT NULL,
+      status VARCHAR(30) NOT NULL DEFAULT 'PENDING_MANAGER',
+      created_by INT REFERENCES users(id),
+      reviewed_by INT REFERENCES users(id),
+      reviewed_at TIMESTAMP,
+      rejection_reason TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (library_id, id_number)
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS physical_transactions (
+      id SERIAL PRIMARY KEY,
+      library_id INT REFERENCES libraries(id) ON DELETE CASCADE,
+      member_id INT NOT NULL REFERENCES physical_members(id),
+      book_id INT NOT NULL REFERENCES physical_books(id),
+      issue_by INT REFERENCES users(id),
+      returned_by INT REFERENCES users(id),
+      issue_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      due_date TIMESTAMP NOT NULL,
+      return_date TIMESTAMP,
+      fine_per_day DECIMAL(10,2) NOT NULL DEFAULT 1,
+      fine_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+};
+
 // Librarian registers physical members with pending manager approval.
-router.post('/members', checkRole(['physical_librarian']), async (req, res) => {
+router.post('/members', checkRole(LIBRARIAN_ROLES), async (req, res) => {
   const { name, phone, address, id_number } = req.body;
 
   if (!name || !phone || !address || !id_number) {
@@ -59,6 +111,8 @@ router.post('/members', checkRole(['physical_librarian']), async (req, res) => {
   }
 
   try {
+    await ensurePhysicalWorkflowTables();
+
     const result = await pool.query(
       `INSERT INTO physical_members (library_id, name, phone, address, id_number, status, created_by)
        VALUES ($1, $2, $3, $4, $5, 'PENDING_MANAGER', $6)
@@ -76,8 +130,10 @@ router.post('/members', checkRole(['physical_librarian']), async (req, res) => {
 });
 
 // Manager reviews pending members.
-router.get('/members/pending', checkRole(['physical_manager']), async (req, res) => {
+router.get('/members/pending', checkRole(MANAGER_ROLES), async (req, res) => {
   try {
+    await ensurePhysicalWorkflowTables();
+
     const result = await pool.query(
       `SELECT *
        FROM physical_members
@@ -93,8 +149,10 @@ router.get('/members/pending', checkRole(['physical_manager']), async (req, res)
   }
 });
 
-router.put('/members/:id/approve', checkRole(['physical_manager']), async (req, res) => {
+router.put('/members/:id/approve', checkRole(MANAGER_ROLES), async (req, res) => {
   try {
+    await ensurePhysicalWorkflowTables();
+
     const result = await pool.query(
       `UPDATE physical_members
        SET status = 'APPROVED', reviewed_by = $1, reviewed_at = NOW(), rejection_reason = NULL
@@ -115,10 +173,12 @@ router.put('/members/:id/approve', checkRole(['physical_manager']), async (req, 
   }
 });
 
-router.put('/members/:id/reject', checkRole(['physical_manager']), async (req, res) => {
+router.put('/members/:id/reject', checkRole(MANAGER_ROLES), async (req, res) => {
   const { reason } = req.body;
 
   try {
+    await ensurePhysicalWorkflowTables();
+
     const result = await pool.query(
       `UPDATE physical_members
        SET status = 'REJECTED', reviewed_by = $1, reviewed_at = NOW(), rejection_reason = $2
@@ -391,7 +451,7 @@ router.delete('/books/:id', checkRole(CATALOG_ROLES), async (req, res) => {
 });
 
 // Issue book: issue_date is automatic and due_date comes from library settings.
-router.post('/transactions/issue', checkRole(['physical_librarian']), async (req, res) => {
+router.post('/transactions/issue', checkRole(LIBRARIAN_ROLES), async (req, res) => {
   const { member_id, book_id } = req.body;
 
   if (!member_id || !book_id) {
@@ -401,6 +461,8 @@ router.post('/transactions/issue', checkRole(['physical_librarian']), async (req
   const client = await pool.connect();
 
   try {
+    await ensureCatalogTables();
+    await ensurePhysicalWorkflowTables();
     await client.query('BEGIN');
 
     const memberResult = await client.query(
@@ -484,11 +546,13 @@ router.post('/transactions/issue', checkRole(['physical_librarian']), async (req
 });
 
 // Return book: save return_date, calculate fine_amount, and update availability.
-router.post('/transactions/:id/return', checkRole(['physical_librarian']), async (req, res) => {
+router.post('/transactions/:id/return', checkRole(LIBRARIAN_ROLES), async (req, res) => {
   const transactionId = req.params.id;
   const client = await pool.connect();
 
   try {
+    await ensureCatalogTables();
+    await ensurePhysicalWorkflowTables();
     await client.query('BEGIN');
 
     const txResult = await client.query(
