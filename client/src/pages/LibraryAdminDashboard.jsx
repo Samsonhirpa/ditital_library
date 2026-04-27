@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const EMPTY_FORM = {
   email: '',
@@ -10,6 +11,9 @@ const EMPTY_FORM = {
 };
 
 function LibraryAdminDashboard() {
+  const { user } = useAuth();
+  const isLibraryAdmin = user?.role === 'library_admin';
+
   const [staff, setStaff] = useState([]);
   const [stats, setStats] = useState(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -18,13 +22,21 @@ function LibraryAdminDashboard() {
 
   const loadData = async () => {
     try {
-      const [staffRes, statsRes] = await Promise.all([
-        api.get('/library-admin/staff'),
-        api.get('/library-admin/dashboard')
-      ]);
+      const requests = [api.get('/library-admin/dashboard')];
 
-      setStaff(staffRes.data);
-      setStats(statsRes.data);
+      if (isLibraryAdmin) {
+        requests.unshift(api.get('/library-admin/staff'));
+      }
+
+      const responses = await Promise.all(requests);
+
+      if (isLibraryAdmin) {
+        setStaff(responses[0].data);
+        setStats(responses[1].data);
+      } else {
+        setStaff([]);
+        setStats(responses[0].data);
+      }
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to load library admin data');
     } finally {
@@ -107,23 +119,26 @@ function LibraryAdminDashboard() {
           ))}
         </div>
 
+        {isLibraryAdmin && (
         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '1rem', marginBottom: '1rem' }}>
           <h3>1. Staff Management</h3>
-          <p style={{ color: '#475569' }}>Create, edit, and delete Catalogers, Librarians, and Managers for your library branch.</p>
+          <p style={{ color: '#475569' }}>Create, edit, and delete Catalogers, Physical Librarians, and Physical Managers for your library branch.</p>
 
           <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.6rem' }}>
             <input placeholder="Staff full name" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} />
             <input placeholder="Staff email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
             <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
               <option value="cataloger">Cataloger</option>
-              <option value="librarian">Librarian</option>
-              <option value="manager">Manager</option>
+              <option value="physical_librarian">Physical Librarian</option>
+              <option value="physical_manager">Physical Manager</option>
             </select>
             <input placeholder="Temporary password" type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
             <button type="submit" style={{ background: '#0f766e', color: 'white', border: 'none', borderRadius: '8px' }}>Create Staff</button>
           </form>
         </div>
+        )}
 
+        {isLibraryAdmin && (
         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '1rem' }}>
           <h3>2. Staff Directory</h3>
           {loading ? (
@@ -141,8 +156,8 @@ function LibraryAdminDashboard() {
                       <input type="email" value={draft.email} onChange={(e) => setEditingStaff({ ...draft, email: e.target.value })} onFocus={() => setEditingStaff(draft)} />
                       <select value={draft.role} onChange={(e) => setEditingStaff({ ...draft, role: e.target.value })} onFocus={() => setEditingStaff(draft)}>
                         <option value="cataloger">Cataloger</option>
-                        <option value="librarian">Librarian</option>
-                        <option value="manager">Manager</option>
+                        <option value="physical_librarian">Physical Librarian</option>
+                        <option value="physical_manager">Physical Manager</option>
                       </select>
                       <div style={{ display: 'flex', gap: '0.4rem' }}>
                         <button type="button" onClick={handleUpdate} disabled={editingStaff?.id !== person.id}>Save</button>
@@ -155,6 +170,7 @@ function LibraryAdminDashboard() {
             </div>
           )}
         </div>
+        )}
       </div>
     </DashboardLayout>
   );

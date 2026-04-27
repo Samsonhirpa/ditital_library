@@ -78,7 +78,7 @@ function App() {
 } />
 
 <Route path="/library-admin/*" element={
-  <ProtectedRoute allowedRoles={['library_admin']}>
+  <ProtectedRoute allowedRoles={['library_admin', 'physical_librarian', 'physical_manager']}>
     <LibraryAdminDashboard />
   </ProtectedRoute>
 } />

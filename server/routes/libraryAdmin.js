@@ -1,12 +1,12 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
-const { authMiddleware, checkRole } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
-const STAFF_ROLES = ['cataloger', 'librarian', 'manager'];
+const STAFF_ROLES = ['cataloger', 'physical_librarian', 'physical_manager'];
 
-router.use(authMiddleware, checkRole(['library_admin']));
+router.use(authMiddleware);
 
 const ensureLibraryScope = (req, res) => {
   if (!req.user.library_id) {
@@ -16,7 +16,16 @@ const ensureLibraryScope = (req, res) => {
   return true;
 };
 
+const ensureRole = (req, res, roles) => {
+  if (!roles.includes(req.user.role)) {
+    res.status(403).json({ message: `Access denied. Required role: ${roles.join(' or ')}` });
+    return false;
+  }
+  return true;
+};
+
 router.get('/staff', async (req, res) => {
+  if (!ensureRole(req, res, ['library_admin'])) return;
   if (!ensureLibraryScope(req, res)) return;
 
   try {
@@ -36,6 +45,7 @@ router.get('/staff', async (req, res) => {
 });
 
 router.post('/staff', async (req, res) => {
+  if (!ensureRole(req, res, ['library_admin'])) return;
   if (!ensureLibraryScope(req, res)) return;
 
   const { email, full_name, role, password } = req.body;
@@ -61,6 +71,7 @@ router.post('/staff', async (req, res) => {
 });
 
 router.put('/staff/:id', async (req, res) => {
+  if (!ensureRole(req, res, ['library_admin'])) return;
   if (!ensureLibraryScope(req, res)) return;
 
   const { email, full_name, role } = req.body;
@@ -93,6 +104,7 @@ router.put('/staff/:id', async (req, res) => {
 });
 
 router.delete('/staff/:id', async (req, res) => {
+  if (!ensureRole(req, res, ['library_admin'])) return;
   if (!ensureLibraryScope(req, res)) return;
 
   try {
@@ -116,6 +128,7 @@ router.delete('/staff/:id', async (req, res) => {
 });
 
 router.get('/dashboard', async (req, res) => {
+  if (!ensureRole(req, res, ['library_admin', 'physical_librarian', 'physical_manager'])) return;
   if (!ensureLibraryScope(req, res)) return;
 
   try {
