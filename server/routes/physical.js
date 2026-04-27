@@ -8,6 +8,31 @@ router.use(authMiddleware);
 
 const getLibraryScope = (req) => req.user.library_id || null;
 
+const ensureCatalogTables = async () => {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS physical_categories (
+      id SERIAL PRIMARY KEY,
+      library_id INT REFERENCES libraries(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      created_by INT REFERENCES users(id),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (library_id, name)
+    )
+  `);
+
+  await pool.query(`
+    ALTER TABLE physical_books
+    ADD COLUMN IF NOT EXISTS category_id INT REFERENCES physical_categories(id) ON DELETE SET NULL
+  `);
+
+  await pool.query(`
+    ALTER TABLE physical_books
+    ADD COLUMN IF NOT EXISTS shelf_location VARCHAR(100)
+  `);
+};
+
 // Librarian registers physical members with pending manager approval.
 router.post('/members', checkRole(['physical_librarian']), async (req, res) => {
   const { name, phone, address, id_number } = req.body;
@@ -97,9 +122,33 @@ router.put('/members/:id/reject', checkRole(['physical_manager']), async (req, r
   }
 });
 
+// Cataloger/librarian/manager can register categories.
+router.post('/categories', checkRole(['cataloger', 'librarian', 'manager']), async (req, res) => {
+  const { name, description } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ message: 'Category name is required' });
+  }
+
+  try {
+    await ensureCatalogTables();
+
+    const result = await pool.query(
+      `INSERT INTO physical_categories (library_id, name, description, created_by)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [getLibraryScope(req), name.trim(), description || null, req.user.id]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Failed to add category' });
+  }
+});
+
 // Optional helper endpoint to register physical books.
-router.post('/books', checkRole(['physical_librarian', 'physical_manager']), async (req, res) => {
-  const { title, author, isbn, copies_total } = req.body;
+router.post('/books', checkRole(['cataloger', 'librarian', 'manager']), async (req, res) => {
+  const { title, author, isbn, copies_total, category_id, shelf_location } = req.body;
   const total = Number(copies_total || 1);
 
   if (!title || total <= 0) {
@@ -107,11 +156,27 @@ router.post('/books', checkRole(['physical_librarian', 'physical_manager']), asy
   }
 
   try {
+    await ensureCatalogTables();
+
+    if (category_id) {
+      const categoryResult = await pool.query(
+        `SELECT id
+         FROM physical_categories
+         WHERE id = $1
+           AND ($2::int IS NULL OR library_id = $2)`,
+        [category_id, getLibraryScope(req)]
+      );
+
+      if (!categoryResult.rows.length) {
+        return res.status(400).json({ message: 'Category not found in your library' });
+      }
+    }
+
     const result = await pool.query(
-      `INSERT INTO physical_books (library_id, title, author, isbn, copies_total, copies_available)
-       VALUES ($1, $2, $3, $4, $5, $5)
+      `INSERT INTO physical_books (library_id, title, author, isbn, copies_total, copies_available, category_id, shelf_location)
+       VALUES ($1, $2, $3, $4, $5, $5, $6, $7)
        RETURNING *`,
-      [getLibraryScope(req), title, author || null, isbn || null, total]
+      [getLibraryScope(req), title, author || null, isbn || null, total, category_id || null, shelf_location || null]
     );
 
     res.status(201).json(result.rows[0]);

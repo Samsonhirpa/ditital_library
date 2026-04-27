@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 const EMPTY_FORM = {
   email: '',
   full_name: '',
-  role: 'cataloger',
+  role: 'physical_librarian',
   password: ''
 };
 

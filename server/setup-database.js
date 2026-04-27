@@ -36,6 +36,18 @@ async function setupDatabase() {
     `);
     console.log('✅ users.library_id column ensured');
 
+    await pool.query(`
+      UPDATE users
+      SET role = CASE
+        WHEN role = 'librarian' THEN 'physical_librarian'
+        WHEN role = 'manager' THEN 'physical_manager'
+        ELSE role
+      END
+      WHERE library_id IS NOT NULL
+        AND role IN ('librarian', 'manager')
+    `);
+    console.log('✅ library staff roles migrated to physical_* roles');
+
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS library_settings (
@@ -85,6 +97,32 @@ async function setupDatabase() {
       )
     `);
     console.log('✅ physical_books table created');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS physical_categories (
+        id SERIAL PRIMARY KEY,
+        library_id INT REFERENCES libraries(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        created_by INT REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (library_id, name)
+      )
+    `);
+    console.log('✅ physical_categories table created');
+
+    await pool.query(`
+      ALTER TABLE physical_books
+      ADD COLUMN IF NOT EXISTS category_id INT REFERENCES physical_categories(id) ON DELETE SET NULL
+    `);
+    console.log('✅ physical_books.category_id column ensured');
+
+    await pool.query(`
+      ALTER TABLE physical_books
+      ADD COLUMN IF NOT EXISTS shelf_location VARCHAR(100)
+    `);
+    console.log('✅ physical_books.shelf_location column ensured');
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS physical_transactions (
