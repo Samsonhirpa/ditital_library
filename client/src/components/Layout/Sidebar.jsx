@@ -45,9 +45,8 @@ function Sidebar({ isOpen }) {
         { id: 'staff', label: 'Staff Management', icon: '👥', path: '/library-admin' },
       ],
       cataloger: [
-        { id: 'books', label: 'Book Management', icon: '📖', path: '/cataloger/books' },
-        { id: 'categories', label: 'Categories', icon: '📁', path: '/cataloger/categories' },
-        { id: 'cataloger-reports', label: 'Reports & Analytics', icon: '📈', path: '/cataloger' },
+        { id: 'books', label: 'Book Management', icon: '📖', path: '/cataloger' },
+        { id: 'categories', label: 'Categories', icon: '📁', path: '/cataloger' },
       ],
       manager: [
         { id: 'published', label: 'Published Content', icon: '📚', path: '/manager/published' },
