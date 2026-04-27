@@ -1,0 +1,101 @@
+.cataloger-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.cataloger-hero {
+  background: linear-gradient(135deg, #1f4e79 0%, #2d6ca2 60%, #3f8cc8 100%);
+  color: #fff;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 10px 24px rgba(17, 37, 61, 0.2);
+}
+
+.cataloger-hero h1 { margin: 0 0 8px; font-size: 1.8rem; }
+.cataloger-hero p { margin: 0; opacity: 0.92; }
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.kpi-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid #e8edf3;
+}
+
+.kpi-card h3 { margin: 0; color: #43617e; font-size: .9rem; }
+.kpi-card p { margin: 10px 0 0; font-size: 1.7rem; font-weight: 700; color: #163656; }
+
+.panel {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e8edf3;
+  padding: 16px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.btn-primary {
+  border: none;
+  background: #1f6fb2;
+  color: #fff;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary, .btn-danger {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.btn-secondary { background: #e8f1fb; color: #0d4f86; }
+.btn-danger { background: #fdeaea; color: #a52626; }
+
+.table-wrap { overflow-x: auto; }
+.table-wrap table { width: 100%; border-collapse: collapse; }
+.table-wrap th, .table-wrap td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #edf2f7;
+}
+.actions { display: flex; gap: 8px; }
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 16, 25, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+.modal {
+  width: min(560px, calc(100% - 24px));
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+}
+.modal form { display: grid; gap: 10px; }
+.modal input, .modal select, .modal textarea {
+  width: 100%;
+  border: 1px solid #d7e1ec;
+  border-radius: 8px;
+  padding: 10px;
+}
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+
+.status-message { margin: 0; font-size: 0.9rem; color: #1f6fb2; }
+.error-message { margin: 0; font-size: 0.9rem; color: #a52626; }

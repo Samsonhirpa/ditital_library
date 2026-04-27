@@ -11,7 +11,8 @@ function Sidebar({ isOpen }) {
     super_admin: '/super-admin',
     library_admin: '/library-admin',
     physical_librarian: '/library-admin',
-    physical_manager: '/library-admin'
+    physical_manager: '/library-admin',
+    cataloger: '/cataloger/dashboard'
   };
   const dashboardPath = dashboardPathMap[role] || `/${role}`;
 
@@ -53,8 +54,9 @@ function Sidebar({ isOpen }) {
         { id: 'physical-dashboard', label: 'Physical Dashboard', icon: '📊', path: '/library-admin' },
       ],
       cataloger: [
-        { id: 'books', label: 'Book Management', icon: '📖', path: '/cataloger' },
-        { id: 'categories', label: 'Categories', icon: '📁', path: '/cataloger' },
+        { id: 'cataloger-dashboard', label: 'Cataloger Dashboard', icon: '📊', path: '/cataloger/dashboard' },
+        { id: 'books', label: 'Book Management', icon: '📖', path: '/cataloger/books' },
+        { id: 'categories', label: 'Categories', icon: '📁', path: '/cataloger/categories' },
       ],
       manager: [
         { id: 'published', label: 'Published Content', icon: '📚', path: '/manager/published' },
