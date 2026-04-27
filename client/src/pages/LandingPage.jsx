@@ -56,6 +56,40 @@ function LandingPage() {
             Access thousands of physical and digital resources on Oromo history, 
             culture, language, and academic research
           </p>
+
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '0.75rem',
+            flexWrap: 'wrap',
+            marginBottom: '1.4rem'
+          }}>
+            <Link to="/catalog" style={{
+              display: 'inline-block',
+              background: '#ffffff',
+              color: '#2c5f8a',
+              padding: '10px 24px',
+              borderRadius: '28px',
+              textDecoration: 'none',
+              fontWeight: '700',
+              fontSize: '0.85rem'
+            }}>
+              Digital Library
+            </Link>
+            <Link to="/physical-library" style={{
+              display: 'inline-block',
+              background: 'rgba(255,255,255,0.16)',
+              color: '#ffffff',
+              border: '1px solid rgba(255,255,255,0.35)',
+              padding: '10px 24px',
+              borderRadius: '28px',
+              textDecoration: 'none',
+              fontWeight: '700',
+              fontSize: '0.85rem'
+            }}>
+              Physical Library
+            </Link>
+          </div>
           
           {/* Search Bar */}
           <div style={{
