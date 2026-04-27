@@ -9,7 +9,9 @@ function Sidebar({ isOpen }) {
   const role = user?.role;
   const dashboardPathMap = {
     super_admin: '/super-admin',
-    library_admin: '/library-admin'
+    library_admin: '/library-admin',
+    physical_librarian: '/library-admin',
+    physical_manager: '/library-admin'
   };
   const dashboardPath = dashboardPathMap[role] || `/${role}`;
 
@@ -43,6 +45,12 @@ function Sidebar({ isOpen }) {
       ],
       library_admin: [
         { id: 'staff', label: 'Staff Management', icon: '👥', path: '/library-admin' },
+      ],
+      physical_librarian: [
+        { id: 'physical-dashboard', label: 'Physical Dashboard', icon: '📊', path: '/library-admin' },
+      ],
+      physical_manager: [
+        { id: 'physical-dashboard', label: 'Physical Dashboard', icon: '📊', path: '/library-admin' },
       ],
       cataloger: [
         { id: 'books', label: 'Book Management', icon: '📖', path: '/cataloger' },
