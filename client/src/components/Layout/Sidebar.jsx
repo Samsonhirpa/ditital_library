@@ -10,8 +10,8 @@ function Sidebar({ isOpen }) {
   const dashboardPathMap = {
     super_admin: '/super-admin',
     library_admin: '/library-admin',
-    physical_librarian: '/library-admin',
-    physical_manager: '/library-admin',
+    physical_librarian: '/physical-librarian/issue',
+    physical_manager: '/physical-librarian/issue',
     cataloger: '/cataloger/dashboard'
   };
   const dashboardPath = dashboardPathMap[role] || `/${role}`;
@@ -48,10 +48,18 @@ function Sidebar({ isOpen }) {
         { id: 'staff', label: 'Staff Management', icon: '👥', path: '/library-admin' },
       ],
       physical_librarian: [
-        { id: 'physical-dashboard', label: 'Physical Dashboard', icon: '📊', path: '/library-admin' },
+        { id: 'issue-book', label: 'Issue Book', icon: '📘', path: '/physical-librarian/issue' },
+        { id: 'return-book', label: 'Return Book', icon: '📗', path: '/physical-librarian/return' },
+        { id: 'members', label: 'Members', icon: '👥', path: '/physical-librarian/members' },
+        { id: 'overdue', label: 'Overdue Return', icon: '⏰', path: '/physical-librarian/overdue' },
+        { id: 'fees', label: 'Fee Settings', icon: '💵', path: '/physical-librarian/settings' },
       ],
       physical_manager: [
-        { id: 'physical-dashboard', label: 'Physical Dashboard', icon: '📊', path: '/library-admin' },
+        { id: 'issue-book', label: 'Issue Book', icon: '📘', path: '/physical-librarian/issue' },
+        { id: 'return-book', label: 'Return Book', icon: '📗', path: '/physical-librarian/return' },
+        { id: 'members', label: 'Members', icon: '👥', path: '/physical-librarian/members' },
+        { id: 'overdue', label: 'Overdue Return', icon: '⏰', path: '/physical-librarian/overdue' },
+        { id: 'fees', label: 'Fee Settings', icon: '💵', path: '/physical-librarian/settings' },
       ],
       cataloger: [
         { id: 'cataloger-dashboard', label: 'Cataloger Dashboard', icon: '📊', path: '/cataloger/dashboard' },
