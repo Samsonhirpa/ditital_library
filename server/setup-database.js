@@ -36,6 +36,18 @@ async function setupDatabase() {
     `);
     console.log('✅ users.library_id column ensured');
 
+    await pool.query(`
+      UPDATE users
+      SET role = CASE
+        WHEN role = 'librarian' THEN 'physical_librarian'
+        WHEN role = 'manager' THEN 'physical_manager'
+        ELSE role
+      END
+      WHERE library_id IS NOT NULL
+        AND role IN ('librarian', 'manager')
+    `);
+    console.log('✅ library staff roles migrated to physical_* roles');
+
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS library_settings (
