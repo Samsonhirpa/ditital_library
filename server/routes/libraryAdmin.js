@@ -4,7 +4,7 @@ const pool = require('../config/db');
 const { authMiddleware, checkRole } = require('../middleware/auth');
 
 const router = express.Router();
-const STAFF_ROLES = ['cataloger', 'librarian', 'manager'];
+const STAFF_ROLES = ['physical_librarian', 'physical_manager'];
 
 router.use(authMiddleware, checkRole(['library_admin']));
 

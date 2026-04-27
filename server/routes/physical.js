@@ -34,7 +34,7 @@ const ensureCatalogTables = async () => {
 };
 
 // Librarian registers physical members with pending manager approval.
-router.post('/members', checkRole(['librarian']), async (req, res) => {
+router.post('/members', checkRole(['physical_librarian']), async (req, res) => {
   const { name, phone, address, id_number } = req.body;
 
   if (!name || !phone || !address || !id_number) {
@@ -59,7 +59,7 @@ router.post('/members', checkRole(['librarian']), async (req, res) => {
 });
 
 // Manager reviews pending members.
-router.get('/members/pending', checkRole(['manager']), async (req, res) => {
+router.get('/members/pending', checkRole(['physical_manager']), async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT *
@@ -76,7 +76,7 @@ router.get('/members/pending', checkRole(['manager']), async (req, res) => {
   }
 });
 
-router.put('/members/:id/approve', checkRole(['manager']), async (req, res) => {
+router.put('/members/:id/approve', checkRole(['physical_manager']), async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE physical_members
@@ -98,7 +98,7 @@ router.put('/members/:id/approve', checkRole(['manager']), async (req, res) => {
   }
 });
 
-router.put('/members/:id/reject', checkRole(['manager']), async (req, res) => {
+router.put('/members/:id/reject', checkRole(['physical_manager']), async (req, res) => {
   const { reason } = req.body;
 
   try {
@@ -186,7 +186,7 @@ router.post('/books', checkRole(['cataloger', 'librarian', 'manager']), async (r
 });
 
 // Issue book: issue_date is automatic and due_date comes from library settings.
-router.post('/transactions/issue', checkRole(['librarian']), async (req, res) => {
+router.post('/transactions/issue', checkRole(['physical_librarian']), async (req, res) => {
   const { member_id, book_id } = req.body;
 
   if (!member_id || !book_id) {
@@ -279,7 +279,7 @@ router.post('/transactions/issue', checkRole(['librarian']), async (req, res) =>
 });
 
 // Return book: save return_date, calculate fine_amount, and update availability.
-router.post('/transactions/:id/return', checkRole(['librarian']), async (req, res) => {
+router.post('/transactions/:id/return', checkRole(['physical_librarian']), async (req, res) => {
   const transactionId = req.params.id;
   const client = await pool.connect();
 
