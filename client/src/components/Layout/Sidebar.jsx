@@ -7,7 +7,11 @@ function Sidebar({ isOpen }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const role = user?.role;
-  const dashboardPath = role === 'super_admin' ? '/super-admin' : `/${role}`;
+  const dashboardPathMap = {
+    super_admin: '/super-admin',
+    library_admin: '/library-admin'
+  };
+  const dashboardPath = dashboardPathMap[role] || `/${role}`;
 
   const handleLogout = () => {
     logout();
@@ -36,6 +40,9 @@ function Sidebar({ isOpen }) {
         { id: 'upload', label: 'Upload Content', icon: '📤', path: '/librarian/upload' },
         { id: 'myuploads', label: 'My Uploads', icon: '📋', path: '/librarian/my-uploads' },
         { id: 'stats', label: 'Usage Statistics', icon: '📊', path: '/librarian/stats' },
+      ],
+      library_admin: [
+        { id: 'staff', label: 'Staff Management', icon: '👥', path: '/library-admin' },
       ],
       manager: [
         { id: 'published', label: 'Published Content', icon: '📚', path: '/manager/published' },

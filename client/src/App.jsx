@@ -14,6 +14,7 @@ import PaymentApproval from './pages/manager/PaymentApproval';
 import MemberDashboard from './pages/MemberDashboard';
 import MyPurchases from './pages/MyPurchases';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import LibraryAdminDashboard from './pages/LibraryAdminDashboard';
 
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -74,6 +75,13 @@ function App() {
     <PublishedContent />
   </ProtectedRoute>
 } />
+
+<Route path="/library-admin/*" element={
+  <ProtectedRoute allowedRoles={['library_admin']}>
+    <LibraryAdminDashboard />
+  </ProtectedRoute>
+} />
+
 <Route path="/member" element={
   <ProtectedRoute allowedRoles={['member']}>
     <MemberDashboard />
