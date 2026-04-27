@@ -10,6 +10,22 @@ const getLibraryScope = (req) => req.user.library_id || null;
 
 const ensureCatalogTables = async () => {
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS physical_books (
+      id SERIAL PRIMARY KEY,
+      library_id INT REFERENCES libraries(id) ON DELETE CASCADE,
+      title VARCHAR(255) NOT NULL,
+      author VARCHAR(255),
+      isbn VARCHAR(50),
+      copies_total INT NOT NULL DEFAULT 1,
+      copies_available INT NOT NULL DEFAULT 1,
+      is_available BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (library_id, isbn)
+    )
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS physical_categories (
       id SERIAL PRIMARY KEY,
       library_id INT REFERENCES libraries(id) ON DELETE CASCADE,
