@@ -7,8 +7,25 @@ const router = express.Router();
 router.use(authMiddleware);
 
 const getLibraryScope = (req) => req.user.library_id || null;
+const CATALOG_ROLES = ['cataloger', 'librarian', 'manager'];
 
 const ensureCatalogTables = async () => {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS physical_books (
+      id SERIAL PRIMARY KEY,
+      library_id INT REFERENCES libraries(id) ON DELETE CASCADE,
+      title VARCHAR(255) NOT NULL,
+      author VARCHAR(255),
+      isbn VARCHAR(50),
+      copies_total INT NOT NULL DEFAULT 1,
+      copies_available INT NOT NULL DEFAULT 1,
+      is_available BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (library_id, isbn)
+    )
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS physical_categories (
       id SERIAL PRIMARY KEY,
@@ -122,8 +139,26 @@ router.put('/members/:id/reject', checkRole(['physical_manager']), async (req, r
   }
 });
 
+router.get('/categories', checkRole(CATALOG_ROLES), async (req, res) => {
+  try {
+    await ensureCatalogTables();
+
+    const result = await pool.query(
+      `SELECT id, library_id, name, description, created_by, created_at, updated_at
+       FROM physical_categories
+       WHERE ($1::int IS NULL OR library_id = $1)
+       ORDER BY name ASC`,
+      [getLibraryScope(req)]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Failed to fetch categories' });
+  }
+});
+
 // Cataloger/librarian/manager can register categories.
-router.post('/categories', checkRole(['cataloger', 'librarian', 'manager']), async (req, res) => {
+router.post('/categories', checkRole(CATALOG_ROLES), async (req, res) => {
   const { name, description } = req.body;
 
   if (!name || !name.trim()) {
@@ -137,7 +172,7 @@ router.post('/categories', checkRole(['cataloger', 'librarian', 'manager']), asy
       `INSERT INTO physical_categories (library_id, name, description, created_by)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [getLibraryScope(req), name.trim(), description || null, req.user.id]
+      [getLibraryScope(req), name.trim(), description?.trim() || null, req.user.id]
     );
 
     res.status(201).json(result.rows[0]);
@@ -146,12 +181,82 @@ router.post('/categories', checkRole(['cataloger', 'librarian', 'manager']), asy
   }
 });
 
+router.put('/categories/:id', checkRole(CATALOG_ROLES), async (req, res) => {
+  const { name, description } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ message: 'Category name is required' });
+  }
+
+  try {
+    await ensureCatalogTables();
+
+    const result = await pool.query(
+      `UPDATE physical_categories
+       SET name = $1, description = $2, updated_at = NOW()
+       WHERE id = $3
+         AND ($4::int IS NULL OR library_id = $4)
+       RETURNING *`,
+      [name.trim(), description?.trim() || null, req.params.id, getLibraryScope(req)]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Failed to update category' });
+  }
+});
+
+router.delete('/categories/:id', checkRole(CATALOG_ROLES), async (req, res) => {
+  try {
+    await ensureCatalogTables();
+
+    const result = await pool.query(
+      `DELETE FROM physical_categories
+       WHERE id = $1
+         AND ($2::int IS NULL OR library_id = $2)
+       RETURNING id`,
+      [req.params.id, getLibraryScope(req)]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    res.json({ message: 'Category deleted' });
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Failed to delete category' });
+  }
+});
+
+router.get('/books', checkRole(CATALOG_ROLES), async (req, res) => {
+  try {
+    await ensureCatalogTables();
+
+    const result = await pool.query(
+      `SELECT b.*, c.name AS category_name
+       FROM physical_books b
+       LEFT JOIN physical_categories c ON c.id = b.category_id
+       WHERE ($1::int IS NULL OR b.library_id = $1)
+       ORDER BY b.created_at DESC`,
+      [getLibraryScope(req)]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Failed to fetch books' });
+  }
+});
+
 // Optional helper endpoint to register physical books.
-router.post('/books', checkRole(['cataloger', 'librarian', 'manager']), async (req, res) => {
+router.post('/books', checkRole(CATALOG_ROLES), async (req, res) => {
   const { title, author, isbn, copies_total, category_id, shelf_location } = req.body;
   const total = Number(copies_total || 1);
 
-  if (!title || total <= 0) {
+  if (!title || !title.trim() || total <= 0) {
     return res.status(400).json({ message: 'title and a positive copies_total are required' });
   }
 
@@ -176,12 +281,112 @@ router.post('/books', checkRole(['cataloger', 'librarian', 'manager']), async (r
       `INSERT INTO physical_books (library_id, title, author, isbn, copies_total, copies_available, category_id, shelf_location)
        VALUES ($1, $2, $3, $4, $5, $5, $6, $7)
        RETURNING *`,
-      [getLibraryScope(req), title, author || null, isbn || null, total, category_id || null, shelf_location || null]
+      [getLibraryScope(req), title.trim(), author?.trim() || null, isbn?.trim() || null, total, category_id || null, shelf_location?.trim() || null]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
     res.status(400).json({ message: error.message || 'Failed to add book' });
+  }
+});
+
+router.put('/books/:id', checkRole(CATALOG_ROLES), async (req, res) => {
+  const { title, author, isbn, copies_total, category_id, shelf_location } = req.body;
+  const total = Number(copies_total || 1);
+
+  if (!title || !title.trim() || total <= 0) {
+    return res.status(400).json({ message: 'title and a positive copies_total are required' });
+  }
+
+  try {
+    await ensureCatalogTables();
+
+    const existingResult = await pool.query(
+      `SELECT copies_total, copies_available
+       FROM physical_books
+       WHERE id = $1
+         AND ($2::int IS NULL OR library_id = $2)`,
+      [req.params.id, getLibraryScope(req)]
+    );
+
+    if (!existingResult.rows.length) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    if (category_id) {
+      const categoryResult = await pool.query(
+        `SELECT id
+         FROM physical_categories
+         WHERE id = $1
+           AND ($2::int IS NULL OR library_id = $2)`,
+        [category_id, getLibraryScope(req)]
+      );
+
+      if (!categoryResult.rows.length) {
+        return res.status(400).json({ message: 'Category not found in your library' });
+      }
+    }
+
+    const existing = existingResult.rows[0];
+    const issuedCopies = Number(existing.copies_total) - Number(existing.copies_available);
+    if (total < issuedCopies) {
+      return res.status(400).json({ message: `copies_total cannot be less than issued copies (${issuedCopies})` });
+    }
+
+    const copiesAvailable = total - issuedCopies;
+
+    const result = await pool.query(
+      `UPDATE physical_books
+       SET title = $1,
+           author = $2,
+           isbn = $3,
+           copies_total = $4,
+           copies_available = $5,
+           is_available = $5 > 0,
+           category_id = $6,
+           shelf_location = $7,
+           updated_at = NOW()
+       WHERE id = $8
+         AND ($9::int IS NULL OR library_id = $9)
+       RETURNING *`,
+      [
+        title.trim(),
+        author?.trim() || null,
+        isbn?.trim() || null,
+        total,
+        copiesAvailable,
+        category_id || null,
+        shelf_location?.trim() || null,
+        req.params.id,
+        getLibraryScope(req)
+      ]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Failed to update book' });
+  }
+});
+
+router.delete('/books/:id', checkRole(CATALOG_ROLES), async (req, res) => {
+  try {
+    await ensureCatalogTables();
+
+    const result = await pool.query(
+      `DELETE FROM physical_books
+       WHERE id = $1
+         AND ($2::int IS NULL OR library_id = $2)
+       RETURNING id`,
+      [req.params.id, getLibraryScope(req)]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    res.json({ message: 'Book deleted' });
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Failed to delete book' });
   }
 });
 

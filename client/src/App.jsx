@@ -16,6 +16,9 @@ import MyPurchases from './pages/MyPurchases';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import LibraryAdminDashboard from './pages/LibraryAdminDashboard';
 import CatalogerDashboard from './pages/CatalogerDashboard';
+import CatalogerHome from './pages/cataloger/CatalogerHome';
+import CatalogerBooksPage from './pages/cataloger/CatalogerBooksPage';
+import CatalogerCategoriesPage from './pages/cataloger/CatalogerCategoriesPage';
 
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -84,9 +87,24 @@ function App() {
 } />
 
 
-<Route path="/cataloger/*" element={
+<Route path="/cataloger" element={
   <ProtectedRoute allowedRoles={['cataloger']}>
     <CatalogerDashboard />
+  </ProtectedRoute>
+} />
+<Route path="/cataloger/dashboard" element={
+  <ProtectedRoute allowedRoles={['cataloger']}>
+    <CatalogerHome />
+  </ProtectedRoute>
+} />
+<Route path="/cataloger/books" element={
+  <ProtectedRoute allowedRoles={['cataloger']}>
+    <CatalogerBooksPage />
+  </ProtectedRoute>
+} />
+<Route path="/cataloger/categories" element={
+  <ProtectedRoute allowedRoles={['cataloger']}>
+    <CatalogerCategoriesPage />
   </ProtectedRoute>
 } />
 
