@@ -26,12 +26,12 @@ router.post('/register', async (req, res) => {
     
     // Create token
     const token = jwt.sign(
-      { id: result.rows[0].id, email: result.rows[0].email, role: result.rows[0].role, library_id: result.rows[0].library_id },
+      { id: result.rows[0].id, email: result.rows[0].email, role: result.rows[0].role, library_id: result.rows[0].library_id, library_name: null },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
     
-    res.status(201).json({ token, user: result.rows[0] });
+    res.status(201).json({ token, user: { ...result.rows[0], library_name: null } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -43,7 +43,19 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const librariesTableExistsResult = await pool.query("SELECT to_regclass('public.libraries') IS NOT NULL AS exists");
+    const librariesTableExists = librariesTableExistsResult.rows[0]?.exists;
+
+    const result = librariesTableExists
+      ? await pool.query(
+          `SELECT u.*, l.name AS library_name
+           FROM users u
+           LEFT JOIN libraries l ON l.id = u.library_id
+           WHERE u.email = $1`,
+          [email]
+        )
+      : await pool.query('SELECT *, NULL::text AS library_name FROM users WHERE email = $1', [email]);
+
     if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -55,7 +67,7 @@ router.post('/login', async (req, res) => {
     }
     
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, library_id: user.library_id },
+      { id: user.id, email: user.email, role: user.role, library_id: user.library_id, library_name: user.library_name },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -67,7 +79,8 @@ router.post('/login', async (req, res) => {
         email: user.email,
         full_name: user.full_name,
         role: user.role,
-        library_id: user.library_id
+        library_id: user.library_id,
+        library_name: user.library_name
       }
     });
   } catch (err) {
