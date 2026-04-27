@@ -33,51 +33,23 @@ function FeeSettingsPage() {
 
   return (
     <section className="physical-panel">
-      <div className="physical-head">
-        <div>
-          <h2>Fee Management Settings</h2>
-          <p className="physical-subtle">Configure overdue, damage, and lost-book charges for your branch.</p>
-        </div>
-      </div>
+      <h2>Fee Management Settings</h2>
       <form className="physical-grid" onSubmit={onSave}>
-        <div className="form-group">
-          <label>Loan Days</label>
-          <input type="number" min="1" value={form.loan_days} onChange={(e) => setForm({ ...form, loan_days: Number(e.target.value) })} placeholder="Loan days" />
-        </div>
-        <div className="form-group">
-          <label>Overdue Fee Per Day</label>
-          <input type="number" min="0" step="0.01" value={form.fine_per_day} onChange={(e) => setForm({ ...form, fine_per_day: Number(e.target.value) })} placeholder="Overdue fee / day" />
-        </div>
+        <input type="number" min="1" value={form.loan_days} onChange={(e) => setForm({ ...form, loan_days: Number(e.target.value) })} placeholder="Loan days" />
+        <input type="number" min="0" step="0.01" value={form.fine_per_day} onChange={(e) => setForm({ ...form, fine_per_day: Number(e.target.value) })} placeholder="Overdue fee / day" />
 
-        <div className="form-group">
-          <label>Low Damage Fee</label>
-          <input type="number" min="0" step="0.01" value={form.damage_fee_low} onChange={(e) => setForm({ ...form, damage_fee_low: Number(e.target.value) })} placeholder="Low damage fee" />
-        </div>
-        <div className="form-group">
-          <label>Medium Damage Fee</label>
-          <input type="number" min="0" step="0.01" value={form.damage_fee_medium} onChange={(e) => setForm({ ...form, damage_fee_medium: Number(e.target.value) })} placeholder="Medium damage fee" />
-        </div>
-        <div className="form-group">
-          <label>High Damage Fee</label>
-          <input type="number" min="0" step="0.01" value={form.damage_fee_high} onChange={(e) => setForm({ ...form, damage_fee_high: Number(e.target.value) })} placeholder="High damage fee" />
-        </div>
+        <input type="number" min="0" step="0.01" value={form.damage_fee_low} onChange={(e) => setForm({ ...form, damage_fee_low: Number(e.target.value) })} placeholder="Low damage fee" />
+        <input type="number" min="0" step="0.01" value={form.damage_fee_medium} onChange={(e) => setForm({ ...form, damage_fee_medium: Number(e.target.value) })} placeholder="Medium damage fee" />
+        <input type="number" min="0" step="0.01" value={form.damage_fee_high} onChange={(e) => setForm({ ...form, damage_fee_high: Number(e.target.value) })} placeholder="High damage fee" />
 
-        <div className="form-group">
-          <label>Lost Fee Mode</label>
-          <select value={form.lost_fee_mode} onChange={(e) => setForm({ ...form, lost_fee_mode: e.target.value })}>
-            <option value="book_sale">Book Sale Value (0 fallback)</option>
-            <option value="custom">Custom Fixed Amount</option>
-          </select>
-        </div>
+        <select value={form.lost_fee_mode} onChange={(e) => setForm({ ...form, lost_fee_mode: e.target.value })}>
+          <option value="book_sale">Lost fee = Book sale value (0 fallback)</option>
+          <option value="custom">Lost fee = Custom fixed amount</option>
+        </select>
 
-        <div className="form-group">
-          <label>Lost Fee Custom Amount</label>
-          <input type="number" min="0" step="0.01" value={form.lost_fee_custom_amount} onChange={(e) => setForm({ ...form, lost_fee_custom_amount: Number(e.target.value) })} placeholder="Lost fee custom amount" />
-        </div>
+        <input type="number" min="0" step="0.01" value={form.lost_fee_custom_amount} onChange={(e) => setForm({ ...form, lost_fee_custom_amount: Number(e.target.value) })} placeholder="Lost fee custom amount" />
 
-        <div className="form-actions">
-          <button type="submit">Save Settings</button>
-        </div>
+        <button type="submit">Save Settings</button>
       </form>
     </section>
   );
