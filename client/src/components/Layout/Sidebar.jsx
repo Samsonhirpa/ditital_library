@@ -44,6 +44,10 @@ function Sidebar({ isOpen }) {
       library_admin: [
         { id: 'staff', label: 'Staff Management', icon: '👥', path: '/library-admin' },
       ],
+      cataloger: [
+        { id: 'books', label: 'Book Management', icon: '📖', path: '/cataloger' },
+        { id: 'categories', label: 'Categories', icon: '📁', path: '/cataloger' },
+      ],
       manager: [
         { id: 'published', label: 'Published Content', icon: '📚', path: '/manager/published' },
         { id: 'publish', label: 'Ready to Publish', icon: '✓', path: '/manager/publish' },

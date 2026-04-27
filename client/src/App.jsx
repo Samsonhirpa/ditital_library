@@ -15,6 +15,7 @@ import MemberDashboard from './pages/MemberDashboard';
 import MyPurchases from './pages/MyPurchases';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import LibraryAdminDashboard from './pages/LibraryAdminDashboard';
+import CatalogerDashboard from './pages/CatalogerDashboard';
 
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -79,6 +80,13 @@ function App() {
 <Route path="/library-admin/*" element={
   <ProtectedRoute allowedRoles={['library_admin']}>
     <LibraryAdminDashboard />
+  </ProtectedRoute>
+} />
+
+
+<Route path="/cataloger/*" element={
+  <ProtectedRoute allowedRoles={['cataloger']}>
+    <CatalogerDashboard />
   </ProtectedRoute>
 } />
 
