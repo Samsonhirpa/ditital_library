@@ -1,6 +1,7 @@
 import React from 'react';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 
+
 const statsCards = [
   { label: 'Total Books', value: '1,248' },
   { label: 'Categories', value: '18' },
