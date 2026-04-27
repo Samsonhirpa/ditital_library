@@ -75,10 +75,7 @@ function PhysicalLibraryLanding() {
   );
 
   const yearOptions = useMemo(
-    () => [
-      'All Years',
-      ...Array.from(new Set(PHYSICAL_ITEMS.map((item) => item.year))).sort((a, b) => b - a)
-    ],
+    () => ['All Years', ...new Set(PHYSICAL_ITEMS.map((item) => item.year)).sort((a, b) => b - a)],
     []
   );
 
