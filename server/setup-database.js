@@ -39,12 +39,12 @@ async function setupDatabase() {
     await pool.query(`
       UPDATE users
       SET role = CASE
-        WHEN role = 'librarian' THEN 'physical_librarian'
-        WHEN role = 'manager' THEN 'physical_manager'
+        WHEN role = 'phsical_librarian' THEN 'physical_librarian'
+        WHEN role = 'phsical_manager' THEN 'physical_manager'
         ELSE role
       END
       WHERE library_id IS NOT NULL
-        AND role IN ('librarian', 'manager')
+        AND role IN ('phsical_librarian', 'phsical_manager')
     `);
     console.log('✅ library staff roles migrated to physical_* roles');
 

@@ -4,7 +4,7 @@ const pool = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
-const STAFF_ROLES = ['physical_librarian', 'physical_manager'];
+const STAFF_ROLES = ['cataloger', 'physical_librarian', 'physical_manager'];
 
 router.use(authMiddleware);
 
@@ -128,7 +128,7 @@ router.delete('/staff/:id', async (req, res) => {
 });
 
 router.get('/dashboard', async (req, res) => {
-  if (!ensureRole(req, res, ['library_admin', 'physical_librarian', 'physical_manager'])) return;
+  if (!ensureRole(req, res, ['library_admin', ...STAFF_ROLES])) return;
   if (!ensureLibraryScope(req, res)) return;
 
   try {
