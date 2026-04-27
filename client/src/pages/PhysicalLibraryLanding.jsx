@@ -1,104 +1,118 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import TopNavbar from '../components/Layout/TopNavbar';
-import api from '../services/api';
+import Footer from '../components/Layout/Footer';
 import './PhysicalLibraryLanding.css';
 
-function normalizeBook(book, index) {
-  const createdAt = book.created_at || book.createdAt || null;
-  const derivedYear = createdAt ? new Date(createdAt).getFullYear() : null;
+const PHYSICAL_ITEMS = [
+  {
+    id: 1,
+    title: 'Seenaa Oromoo: A Historical Reader',
+    author: 'Dr. Birhanu Dinka',
+    year: 2018,
+    library: 'Finfinne Central Library',
+    category: 'History',
+    shelf: 'A-12'
+  },
+  {
+    id: 2,
+    title: 'Afaan Oromoo Grammar Essentials',
+    author: 'Prof. Lensa Tufa',
+    year: 2021,
+    library: 'Adama Community Library',
+    category: 'Language',
+    shelf: 'B-07'
+  },
+  {
+    id: 3,
+    title: 'Oromo Indigenous Governance',
+    author: 'Aster Gemechu',
+    year: 2016,
+    library: 'Jimma Heritage Library',
+    category: 'Governance',
+    shelf: 'C-04'
+  },
+  {
+    id: 4,
+    title: 'Women in Oromo Oral Traditions',
+    author: 'Hana Fekadu',
+    year: 2023,
+    library: 'Finfinne Central Library',
+    category: 'Culture',
+    shelf: 'D-18'
+  },
+  {
+    id: 5,
+    title: 'Contemporary Oromo Literature',
+    author: 'Kedir Mohammed',
+    year: 2020,
+    library: 'Bishoftu Public Library',
+    category: 'Literature',
+    shelf: 'E-03'
+  },
+  {
+    id: 6,
+    title: 'Research Methods for African Studies',
+    author: 'Tigist Bekele',
+    year: 2019,
+    library: 'Jimma Heritage Library',
+    category: 'Research',
+    shelf: 'R-11'
+  }
+];
 
-  return {
-    id: book.id ?? index,
-    title: book.title || 'Untitled Book',
-    author: book.author || 'Unknown Author',
-    category: book.subject || book.category || 'General',
-    library: book.library_name || book.library || 'ORA Main Physical Library',
-    year: Number(book.year || book.publication_year || derivedYear) || null,
-    price: Number(book.price || 0)
-  };
-}
+const CATEGORIES = ['All', 'History', 'Language', 'Culture', 'Governance', 'Literature', 'Research'];
 
 function PhysicalLibraryLanding() {
-  const [books, setBooks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedLibrary, setSelectedLibrary] = useState('All Libraries');
   const [selectedYear, setSelectedYear] = useState('All Years');
-  const [authorFilter, setAuthorFilter] = useState('');
+  const [authorQuery, setAuthorQuery] = useState('');
 
-  useEffect(() => {
-    const fetchBooks = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const response = await api.get('/contents/search');
-        const normalized = (response.data || []).map(normalizeBook);
-        setBooks(normalized);
-      } catch (err) {
-        console.error('Failed to load uploaded books:', err);
-        setError('Unable to load uploaded books right now. Please try again soon.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const libraryOptions = useMemo(
+    () => ['All Libraries', ...new Set(PHYSICAL_ITEMS.map((item) => item.library))],
+    []
+  );
 
-    fetchBooks();
-  }, []);
+  const yearOptions = useMemo(
+    () => ['All Years', ...new Set(PHYSICAL_ITEMS.map((item) => item.year)).sort((a, b) => b - a)],
+    []
+  );
 
-  const categories = useMemo(() => {
-    const values = Array.from(new Set(books.map((book) => book.category).filter(Boolean)));
-    return ['All', ...values];
-  }, [books]);
-
-  const libraries = useMemo(() => {
-    const values = Array.from(new Set(books.map((book) => book.library).filter(Boolean)));
-    return ['All Libraries', ...values];
-  }, [books]);
-
-  const years = useMemo(() => {
-    const values = Array.from(new Set(books.map((book) => book.year).filter(Boolean))).sort((a, b) => b - a);
-    return ['All Years', ...values];
-  }, [books]);
-
-  const filteredBooks = books.filter((book) => {
-    const categoryMatch = selectedCategory === 'All' || book.category === selectedCategory;
-    const libraryMatch = selectedLibrary === 'All Libraries' || book.library === selectedLibrary;
-    const yearMatch = selectedYear === 'All Years' || book.year === Number(selectedYear);
-    const authorMatch = !authorFilter || book.author.toLowerCase().includes(authorFilter.toLowerCase());
-
+  const filteredItems = PHYSICAL_ITEMS.filter((item) => {
+    const categoryMatch = selectedCategory === 'All' || item.category === selectedCategory;
+    const libraryMatch = selectedLibrary === 'All Libraries' || item.library === selectedLibrary;
+    const yearMatch = selectedYear === 'All Years' || item.year === Number(selectedYear);
+    const authorMatch = !authorQuery || item.author.toLowerCase().includes(authorQuery.toLowerCase());
     return categoryMatch && libraryMatch && yearMatch && authorMatch;
   });
 
   return (
     <>
       <TopNavbar />
-
-      <main className="physical-page">
-        <section className="physical-hero-simple">
-          <p className="hero-badge">Physical Libraries</p>
+      <main className="physical-landing">
+        <section className="physical-hero">
+          <p className="physical-eyebrow">Physical Library Network</p>
           <h1>Welcome to Oromo Research Association</h1>
           <p>
-            Discover uploaded books and find them across multiple physical library branches.
-            Search by category, author, library branch, and year.
+            Discover beautiful, community-powered physical libraries across multiple locations with curated Oromo
+            resources for students, researchers, and families.
           </p>
-          <div className="hero-links">
-            <Link to="/catalog" className="hero-btn primary">Digital Library</Link>
-            <Link to="/register" className="hero-btn outline">Become a Member</Link>
+          <div className="physical-hero-actions">
+            <Link to="/catalog" className="btn-primary">Explore Digital Library</Link>
+            <Link to="/register" className="btn-outline">Join as Member</Link>
           </div>
         </section>
 
-        <section className="physical-filter-box">
-          <h2>Browse uploaded books</h2>
+        <section className="physical-filters">
+          <h2>Find resources across multiple physical libraries</h2>
 
-          <div className="category-list">
-            {categories.map((category) => (
+          <div className="category-buttons">
+            {CATEGORIES.map((category) => (
               <button
                 key={category}
                 type="button"
-                className={selectedCategory === category ? 'chip active' : 'chip'}
+                className={selectedCategory === category ? 'category-btn active' : 'category-btn'}
                 onClick={() => setSelectedCategory(category)}
               >
                 {category}
@@ -106,72 +120,55 @@ function PhysicalLibraryLanding() {
             ))}
           </div>
 
-          <div className="filters-grid">
+          <div className="filter-row">
             <select value={selectedLibrary} onChange={(e) => setSelectedLibrary(e.target.value)}>
-              {libraries.map((library) => (
+              {libraryOptions.map((library) => (
                 <option key={library} value={library}>{library}</option>
               ))}
             </select>
 
             <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-              {years.map((year) => (
+              {yearOptions.map((year) => (
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
 
             <input
               type="text"
-              placeholder="Filter by author"
-              value={authorFilter}
-              onChange={(e) => setAuthorFilter(e.target.value)}
+              value={authorQuery}
+              placeholder="Filter by author name"
+              onChange={(e) => setAuthorQuery(e.target.value)}
             />
           </div>
         </section>
 
-        <section className="books-section">
-          <div className="books-header">
-            <h3>Physical library collection</h3>
-            <span>{filteredBooks.length} books</span>
+        <section className="library-grid-section">
+          <div className="result-title-row">
+            <h3>Available Physical Collection</h3>
+            <span>{filteredItems.length} item(s)</span>
           </div>
 
-          {loading && <div className="status-card">Loading uploaded books...</div>}
-          {!loading && error && <div className="status-card error">{error}</div>}
+          <div className="library-grid">
+            {filteredItems.map((item) => (
+              <article key={item.id} className="library-card">
+                <div className="card-chip">{item.category}</div>
+                <h4>{item.title}</h4>
+                <p className="meta">Author: {item.author}</p>
+                <p className="meta">Library: {item.library}</p>
+                <div className="card-footer">
+                  <span>Year: {item.year}</span>
+                  <span>Shelf: {item.shelf}</span>
+                </div>
+              </article>
+            ))}
+          </div>
 
-          {!loading && !error && filteredBooks.length === 0 && (
-            <div className="status-card">No uploaded books found for these filters.</div>
-          )}
-
-          {!loading && !error && filteredBooks.length > 0 && (
-            <div className="books-grid">
-              {filteredBooks.map((book) => (
-                <article key={book.id} className="book-card">
-                  <span className="tag">{book.category}</span>
-                  <h4>{book.title}</h4>
-                  <p>Author: {book.author}</p>
-                  <p>Library: {book.library}</p>
-                  <div className="book-meta">
-                    <span>{book.year || 'Year N/A'}</span>
-                    <span>{book.price > 0 ? `$${book.price}` : 'Free Access'}</span>
-                  </div>
-                </article>
-              ))}
-            </div>
+          {filteredItems.length === 0 && (
+            <div className="empty-state">No physical resources matched your current filters.</div>
           )}
         </section>
-
-        <footer className="physical-landing-footer">
-          <div>
-            <h4>Oromo Research Association • Physical Library Network</h4>
-            <p>
-              Supporting readers, students, and researchers with accessible physical collections.
-            </p>
-          </div>
-          <div className="footer-actions">
-            <Link to="/catalog">Open Digital Catalog</Link>
-            <Link to="/login">Staff Sign In</Link>
-          </div>
-        </footer>
       </main>
+      <Footer />
     </>
   );
 }

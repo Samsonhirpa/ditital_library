@@ -76,11 +76,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/physical-library" element={
-            <RouteErrorBoundary>
-              <PhysicalLibraryLanding />
-            </RouteErrorBoundary>
-          } />
+          <Route path="/physical-library" element={<PhysicalLibraryLanding />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/catalog" element={<Catalog />} />
