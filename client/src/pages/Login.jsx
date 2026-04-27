@@ -24,6 +24,9 @@ function Login() {
       
       // Redirect based on role
       switch(userRole) {
+        case 'super_admin':
+          navigate('/super-admin');
+          break;
         case 'admin':
           navigate('/admin');
           break;

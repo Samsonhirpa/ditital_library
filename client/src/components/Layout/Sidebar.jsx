@@ -7,6 +7,7 @@ function Sidebar({ isOpen }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const role = user?.role;
+  const dashboardPath = role === 'super_admin' ? '/super-admin' : `/${role}`;
 
   const handleLogout = () => {
     logout();
@@ -15,12 +16,16 @@ function Sidebar({ isOpen }) {
 
   const getMenuItems = () => {
     const commonMenus = [
-      { id: 'dashboard', label: 'Dashboard', icon: '📊', path: `/${role}` },
+      { id: 'dashboard', label: 'Dashboard', icon: '📊', path: dashboardPath },
       { id: 'catalog', label: 'Catalog', icon: '📚', path: '/catalog' },
       { id: 'myaccount', label: 'My Account', icon: '👤', path: '/my-account' },
     ];
 
     const roleMenus = {
+      super_admin: [
+        { id: 'libraries', label: 'Libraries', icon: '🏢', path: '/super-admin/libraries' },
+        { id: 'users', label: 'Global Users', icon: '👥', path: '/super-admin/libraries' },
+      ],
       admin: [
         { id: 'users', label: 'User Management', icon: '👥', path: '/admin/users' },
         { id: 'approvals', label: 'Content Approvals', icon: '✓', path: '/admin/approvals' },
@@ -82,7 +87,7 @@ function Sidebar({ isOpen }) {
           <li className="header">MAIN NAVIGATION</li>
           {menuItems.map((item) => (
             <li key={item.id}>
-              <NavLink to={item.path} end={item.path === `/${role}`}>
+              <NavLink to={item.path} end={item.path === dashboardPath}>
                 <i>{item.icon}</i>
                 <span>{item.label}</span>
               </NavLink>

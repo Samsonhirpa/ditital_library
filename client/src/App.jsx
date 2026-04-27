@@ -13,6 +13,7 @@ import PublishedContent from './pages/manager/PublishedContent';
 import PaymentApproval from './pages/manager/PaymentApproval';
 import MemberDashboard from './pages/MemberDashboard';
 import MyPurchases from './pages/MyPurchases';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -43,7 +44,14 @@ function App() {
               <MyAccount />
             </ProtectedRoute>
           } />
-// Admin Routes
+
+<Route path="/super-admin/*" element={
+  <ProtectedRoute allowedRoles={['super_admin']}>
+    <SuperAdminDashboard />
+  </ProtectedRoute>
+} />
+
+{/* Admin Routes */}
 <Route path="/admin/*" element={
   <ProtectedRoute allowedRoles={['admin']}>
     <AdminDashboard />

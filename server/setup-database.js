@@ -12,6 +12,30 @@ async function setupDatabase() {
   console.log('🔧 Setting up database tables...');
   
   try {
+
+    // Create libraries table for multi-tenant physical library management
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS libraries (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(100) UNIQUE,
+        address TEXT,
+        contact_email VARCHAR(255),
+        contact_phone VARCHAR(50),
+        is_active BOOLEAN DEFAULT TRUE,
+        created_by INT REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ libraries table created');
+
+    await pool.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS library_id INT REFERENCES libraries(id) ON DELETE SET NULL
+    `);
+    console.log('✅ users.library_id column ensured');
+
     // Create digital_contents table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS digital_contents (
