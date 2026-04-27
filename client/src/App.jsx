@@ -27,6 +27,34 @@ import MembersPage from './pages/physical/MembersPage';
 import OverdueReturnsPage from './pages/physical/OverdueReturnsPage';
 import FeeSettingsPage from './pages/physical/FeeSettingsPage';
 
+class RouteErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    console.error('Route render failed:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '2rem', textAlign: 'center' }}>
+          <h2>Something went wrong while loading this page.</h2>
+          <p>Please refresh and try again.</p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, isAuthenticated } = useAuth();
