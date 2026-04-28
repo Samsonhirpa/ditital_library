@@ -107,8 +107,12 @@
 
 .user-name {
     font-size: 0.85rem;
-    color: #334155;
-    font-weight: 500;
+    color: #0f172a;
+    font-weight: 600;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dropdown-icon {
@@ -178,14 +182,16 @@
 }
 
 .dropdown-role {
-    display: inline-block;
-    margin-top: 4px;
-    padding: 2px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    padding: 3px 9px;
     background: #e0f2fe;
-    border-radius: 4px;
-    font-size: 0.65rem;
-    color: #0096FF;
-    font-weight: 500;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    color: #0369a1;
+    font-weight: 600;
 }
 
 .dropdown-item {
