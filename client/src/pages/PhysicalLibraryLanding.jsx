@@ -1,82 +1,60 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 import TopNavbar from '../components/Layout/TopNavbar';
 import LPFooter from '../components/Layout/LPFooter';
-
-const PHYSICAL_ITEMS = [
-  {
-    id: 1,
-    title: 'Seenaa Oromoo: A Historical Reader',
-    author: 'Dr. Birhanu Dinka',
-    subject: 'History',
-    library: 'Finfinne Central Library',
-    shelf: 'A-12',
-    status: 'Available'
-  },
-  {
-    id: 2,
-    title: 'Afaan Oromoo Grammar Essentials',
-    author: 'Prof. Lensa Tufa',
-    subject: 'Language',
-    library: 'Adama Community Library',
-    shelf: 'B-07',
-    status: 'Reference Only'
-  },
-  {
-    id: 3,
-    title: 'Oromo Indigenous Governance',
-    author: 'Aster Gemechu',
-    subject: 'Governance',
-    library: 'Jimma Heritage Library',
-    shelf: 'C-04',
-    status: 'Available'
-  },
-  {
-    id: 4,
-    title: 'Women in Oromo Oral Traditions',
-    author: 'Hana Fekadu',
-    subject: 'Culture',
-    library: 'Finfinne Central Library',
-    shelf: 'D-18',
-    status: 'Checked Out'
-  },
-  {
-    id: 5,
-    title: 'Contemporary Oromo Literature',
-    author: 'Kedir Mohammed',
-    subject: 'Literature',
-    library: 'Bishoftu Public Library',
-    shelf: 'E-03',
-    status: 'Available'
-  },
-  {
-    id: 6,
-    title: 'Research Methods for African Studies',
-    author: 'Tigist Bekele',
-    subject: 'Research',
-    library: 'Jimma Heritage Library',
-    shelf: 'R-11',
-    status: 'Available'
-  }
-];
 
 function PhysicalLibraryLanding() {
   const { isAuthenticated } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [libraries, setLibraries] = useState([]);
+  const [loadingLibraries, setLoadingLibraries] = useState(true);
+  const [libraryError, setLibraryError] = useState('');
 
-  const filteredItems = useMemo(
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchLibraries = async () => {
+      try {
+        setLoadingLibraries(true);
+        const response = await api.get('/public/libraries');
+        if (isMounted) {
+          setLibraries(response.data || []);
+          setLibraryError('');
+        }
+      } catch {
+        if (isMounted) {
+          setLibraryError('Unable to load libraries right now. Please try again later.');
+          setLibraries([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingLibraries(false);
+        }
+      }
+    };
+
+    fetchLibraries();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filteredLibraries = useMemo(
     () =>
-      PHYSICAL_ITEMS.filter((item) => {
+      libraries.filter((library) => {
         const query = searchTerm.toLowerCase();
         return (
-          item.title.toLowerCase().includes(query) ||
-          item.author.toLowerCase().includes(query) ||
-          item.subject.toLowerCase().includes(query) ||
-          item.library.toLowerCase().includes(query)
+          (library.name || '').toLowerCase().includes(query) ||
+          (library.code || '').toLowerCase().includes(query) ||
+          (library.address || '').toLowerCase().includes(query) ||
+          (library.contact_email || '').toLowerCase().includes(query) ||
+          (library.contact_phone || '').toLowerCase().includes(query)
         );
       }),
-    [searchTerm]
+    [libraries, searchTerm]
   );
 
   return (
@@ -159,7 +137,7 @@ function PhysicalLibraryLanding() {
           >
             <input
               type="text"
-              placeholder="Search title, author, subject, or location..."
+              placeholder="Search library name, code, address, phone, or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
@@ -194,12 +172,12 @@ function PhysicalLibraryLanding() {
             }}
           >
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{PHYSICAL_ITEMS.length}+</div>
-              <div style={{ fontSize: '0.8rem', opacity: 0.85 }}>Physical Titles</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{filteredLibraries.length}</div>
+              <div style={{ fontSize: '0.8rem', opacity: 0.85 }}>Visible Libraries</div>
             </div>
             <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>4</div>
-              <div style={{ fontSize: '0.8rem', opacity: 0.85 }}>Library Branches</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{libraries.length}</div>
+              <div style={{ fontSize: '0.8rem', opacity: 0.85 }}>Total Libraries</div>
             </div>
             <div>
               <div style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>6 Days</div>
@@ -238,130 +216,64 @@ function PhysicalLibraryLanding() {
             style={{
               textAlign: 'center',
               fontSize: '2rem',
-              color: '#2c5f8a',
-              marginBottom: '0.5rem'
+              color: '#2c3e50',
+              marginBottom: '0.6rem',
+              fontWeight: '700'
             }}
           >
-            Available Physical Resources
+            Library List
           </h2>
           <p
             style={{
               textAlign: 'center',
               color: '#666',
-              marginBottom: '3rem',
-              fontSize: '0.9rem'
+              marginBottom: '2.5rem',
+              fontSize: '1rem'
             }}
           >
-            Browse holdings from our physical library network
+            Showing active libraries from the database.
           </p>
 
-          {filteredItems.length === 0 ? (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '3rem',
-                background: 'white',
-                borderRadius: '12px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-              }}
-            >
-              <p>No matching physical resources found. Try another search term.</p>
+          {loadingLibraries ? (
+            <div style={{ textAlign: 'center', color: '#1f6fa8', fontWeight: '600' }}>Loading libraries...</div>
+          ) : libraryError ? (
+            <div style={{ textAlign: 'center', color: '#b42318', fontWeight: '600' }}>{libraryError}</div>
+          ) : filteredLibraries.length ? (
+            <div style={{ overflowX: 'auto' }}>
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  background: 'white',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+                }}
+              >
+                <thead>
+                  <tr style={{ background: '#0f4c81', color: 'white' }}>
+                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.9rem' }}>Library Name</th>
+                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.9rem' }}>Code</th>
+                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.9rem' }}>Address</th>
+                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.9rem' }}>Contact Email</th>
+                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.9rem' }}>Contact Phone</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredLibraries.map((library) => (
+                    <tr key={library.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '14px 16px', fontWeight: '600', color: '#2c3e50' }}>{library.name || '-'}</td>
+                      <td style={{ padding: '14px 16px', color: '#555' }}>{library.code || '-'}</td>
+                      <td style={{ padding: '14px 16px', color: '#555' }}>{library.address || '-'}</td>
+                      <td style={{ padding: '14px 16px', color: '#555' }}>{library.contact_email || '-'}</td>
+                      <td style={{ padding: '14px 16px', color: '#555' }}>{library.contact_phone || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '2rem'
-              }}
-            >
-              {filteredItems.map((item) => (
-                <div
-                  key={item.id}
-                  style={{
-                    background: 'white',
-                    borderRadius: '12px',
-                    overflow: 'hidden',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-                    transition: 'transform 0.3s, box-shadow 0.3s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-5px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.12)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
-                  }}
-                >
-                  <div
-                    style={{
-                      height: '180px',
-                      background: 'linear-gradient(135deg, #0f4c81 0%, #1f6fa8 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '3.5rem'
-                    }}
-                  >
-                    <span>🏛️</span>
-                  </div>
-
-                  <div style={{ padding: '1.4rem' }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        fontSize: '0.72rem',
-                        fontWeight: '700',
-                        color: '#0f4c81',
-                        background: '#e6f0f9',
-                        padding: '4px 10px',
-                        borderRadius: '20px',
-                        marginBottom: '0.8rem'
-                      }}
-                    >
-                      {item.subject}
-                    </span>
-                    <h3 style={{ margin: '0 0 0.6rem', color: '#1f3b56', fontSize: '1.05rem' }}>
-                      {item.title}
-                    </h3>
-                    <p style={{ margin: '0 0 0.4rem', color: '#5b6b7a', fontSize: '0.85rem' }}>
-                      <strong>Author:</strong> {item.author}
-                    </p>
-                    <p style={{ margin: '0 0 0.4rem', color: '#5b6b7a', fontSize: '0.85rem' }}>
-                      <strong>Library:</strong> {item.library}
-                    </p>
-                    <p style={{ margin: '0 0 0.8rem', color: '#5b6b7a', fontSize: '0.85rem' }}>
-                      <strong>Shelf:</strong> {item.shelf}
-                    </p>
-
-                    <div
-                      style={{
-                        paddingTop: '0.8rem',
-                        borderTop: '1px solid #e9eef2',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <span style={{ fontSize: '0.75rem', color: '#637381' }}>On-Site Access</span>
-                      <span
-                        style={{
-                          fontSize: '0.72rem',
-                          fontWeight: '700',
-                          color: item.status === 'Available' ? '#1d7f43' : '#946200',
-                          background: item.status === 'Available' ? '#e6f7ed' : '#fff6de',
-                          padding: '4px 10px',
-                          borderRadius: '999px'
-                        }}
-                      >
-                        {item.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <div style={{ textAlign: 'center', color: '#666' }}>No libraries matched your search.</div>
           )}
         </div>
       </div>

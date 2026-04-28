@@ -40,6 +40,7 @@ app.use('/api/manager', require('./routes/manager'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/payments', require('./routes/payment'));
 app.use('/api/super-admin', require('./routes/superAdmin'));
+app.use('/api/public', require('./routes/public'));
 app.use('/api/library-admin', require('./routes/libraryAdmin'));
 app.use('/api/physical', require('./routes/physical'));
 
