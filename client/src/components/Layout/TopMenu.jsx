@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { FiLogOut, FiUser, FiChevronDown, FiMenu } from 'react-icons/fi';
+import { FiLogOut, FiUser, FiChevronDown, FiMenu, FiShield } from 'react-icons/fi';
 import './TopMenu.css';
 
 function TopMenu({ toggleSidebar, sidebarOpen }) {
@@ -20,6 +20,12 @@ function TopMenu({ toggleSidebar, sidebarOpen }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const displayName = user?.full_name || user?.email?.split('@')[0] || 'Account';
+  const firstInitial = displayName?.charAt(0)?.toUpperCase() || 'A';
+  const roleLabel = user?.role
+    ? `${user.role.charAt(0).toUpperCase()}${user.role.slice(1).toLowerCase()}`
+    : 'Member';
 
   const handleLogout = () => {
     logout();
@@ -48,10 +54,10 @@ function TopMenu({ toggleSidebar, sidebarOpen }) {
                 onClick={() => setShowDropdown(!showDropdown)}
               >
                 <div className="user-avatar">
-                  {user?.full_name?.charAt(0) || user?.email?.charAt(0)}
+                  {firstInitial}
                 </div>
                 <span className="user-name">
-                  {user?.full_name?.split(' ')[0] || user?.email?.split('@')[0]}
+                  {displayName}
                 </span>
                 <FiChevronDown size={14} className="dropdown-icon" />
               </button>
@@ -60,12 +66,14 @@ function TopMenu({ toggleSidebar, sidebarOpen }) {
                 <div className="user-dropdown">
                   <div className="dropdown-header">
                     <div className="dropdown-avatar">
-                      {user?.full_name?.charAt(0) || user?.email?.charAt(0)}
+                      {firstInitial}
                     </div>
                     <div className="dropdown-info">
-                      <div className="dropdown-name">{user?.full_name}</div>
+                      <div className="dropdown-name">{displayName}</div>
                       <div className="dropdown-email">{user?.email}</div>
-                      <div className="dropdown-role">{user?.role?.toUpperCase()}</div>
+                      <div className="dropdown-role">
+                        <FiShield size={12} /> {roleLabel}
+                      </div>
                     </div>
                   </div>
                   <Link
@@ -73,13 +81,13 @@ function TopMenu({ toggleSidebar, sidebarOpen }) {
                     onClick={() => setShowDropdown(false)}
                     className="dropdown-item"
                   >
-                    <FiUser size={14} /> My Account
+                    <FiUser size={14} /> Account Settings
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="dropdown-item logout-item"
                   >
-                    <FiLogOut size={14} /> Logout
+                    <FiLogOut size={14} /> Sign Out
                   </button>
                 </div>
               )}
