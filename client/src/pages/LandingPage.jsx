@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import TopNavbar from '../components/Layout/TopNavbar';
-import Footer from '../components/Layout/Footer';
+import LPFooter from '../components/Layout/LPFooter';
 
 function LandingPage() {
   const { isAuthenticated } = useAuth();
@@ -422,7 +422,7 @@ function LandingPage() {
         </div>
       </div>
 
-      <Footer />
+      <LPFooter />
     </>
   );
 }
