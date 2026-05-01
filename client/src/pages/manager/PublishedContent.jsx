@@ -36,20 +36,20 @@ function PublishedContent() {
     <DashboardLayout>
       <div className="published-content-page">
         <div className="page-header">
-          <h1 className="page-title">Published Content</h1>
+          <h1 className="page-title">Our Books</h1>
           <p className="page-subtitle">View all books currently available in the library catalog</p>
         </div>
 
         {loading ? (
           <div className="loading-state">
             <div className="spinner"></div>
-            <p>Loading published books...</p>
+            <p>Loading  books...</p>
           </div>
         ) : publishedBooks.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📚</div>
-            <h3>No published books</h3>
-            <p>Go to "Ready to Publish" tab to publish books</p>
+            <h3>No Added books</h3>
+            <p>Go to "Ready to Release" tab to Add books to library</p>
           </div>
         ) : (
           <div className="published-books-grid">

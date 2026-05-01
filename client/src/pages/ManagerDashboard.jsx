@@ -134,7 +134,7 @@ function ManagerDashboard() {
         {/* Page Header */}
         <div className="page-header">
           <h1 className="page-title">Manager Dashboard</h1>
-          <p className="page-subtitle">Manage content publishing, payments, and monitor sales</p>
+          <p className="page-subtitle">Manage Books, payments, and monitor sales</p>
         </div>
 
         {/* Welcome Card */}
@@ -142,7 +142,7 @@ function ManagerDashboard() {
           <div className="welcome-icon">📊</div>
           <div className="welcome-text">
             <h2>Welcome, {user?.full_name?.split(' ')[0] || user?.email?.split('@')[0]}!</h2>
-            <p><strong>{readyToPublish.length}</strong> items ready to publish | <strong>{pendingPayments.length}</strong> pending payments</p>
+            <p><strong>{readyToPublish.length}</strong> items ready to be added to library | <strong>{pendingPayments.length}</strong> pending payments</p>
           </div>
           <div className="welcome-stats">
             <div className="welcome-stat">
@@ -163,7 +163,7 @@ function ManagerDashboard() {
             onClick={() => setActiveTab('publish')}
           >
             <FiPackage size={16} />
-            Publish Content
+            Add Content to Library
             {readyToPublish.length > 0 && <span className="tab-badge">{readyToPublish.length}</span>}
           </button>
           <button
@@ -263,7 +263,7 @@ function ManagerDashboard() {
                         handlePublish(content.id, price);
                       }}
                     >
-                      <FiCheckCircle size={16} /> Publish to Library
+                      <FiCheckCircle size={16} /> Add to Library
                     </button>
                   </div>
                 ))}

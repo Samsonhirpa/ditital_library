@@ -24,8 +24,8 @@ function Sidebar({ isOpen }) {
   const getMenuItems = () => {
     const commonMenus = [
       { id: 'dashboard', label: 'Dashboard', icon: '📊', path: dashboardPath },
-      { id: 'catalog', label: 'Catalog', icon: '📚', path: '/catalog' },
-      { id: 'myaccount', label: 'My Account', icon: '👤', path: '/my-account' },
+   
+    
     ];
 
     const roleMenus = {
@@ -36,14 +36,12 @@ function Sidebar({ isOpen }) {
       admin: [
         { id: 'users', label: 'User Management', icon: '👥', path: '/admin/users' },
         { id: 'approvals', label: 'Content Approvals', icon: '✓', path: '/admin/approvals' },
-        { id: 'reports', label: 'Reports & Analytics', icon: '📈', path: '/reports' },
-        { id: 'settings', label: 'System Settings', icon: '⚙️', path: '/admin/settings' },
+        // { id: 'reports', label: 'Reports & Analytics', icon: '📈', path: '/reports' },
+        // { id: 'settings', label: 'System Settings', icon: '⚙️', path: '/admin/settings' },
       ],
       librarian: [
         { id: 'upload', label: 'Upload Content', icon: '📤', path: '/librarian/upload' },
-        { id: 'myuploads', label: 'My Uploads', icon: '📋', path: '/librarian/my-uploads' },
-        { id: 'stats', label: 'Usage Statistics', icon: '📊', path: '/librarian/stats' },
-      ],
+       ],
       library_admin: [
         { id: 'staff', label: 'Staff Management', icon: '👥', path: '/library-admin' },
       ],
@@ -71,7 +69,7 @@ function Sidebar({ isOpen }) {
         { id: 'publish', label: 'Ready to Publish', icon: '✓', path: '/manager/publish' },
         { id: 'payments', label: 'Payment Approval', icon: '💰', path: '/manager/payments' },
         { id: 'sales', label: 'Sales & Finance', icon: '📈', path: '/manager/sales' },
-        { id: 'reports', label: 'Reports', icon: '📊', path: '/reports' },
+        // { id: 'reports', label: 'Reports', icon: '📊', path: '/reports' },
       ],
       member: [
         { id: 'borrowed', label: 'My Borrows', icon: '📖', path: '/my-account/borrowed' },
