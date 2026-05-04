@@ -26,12 +26,12 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['.pdf', '.epub', '.jpg', '.jpeg', '.png', '.txt'];
+  const allowedTypes = ['.pdf', '.epub', '.jpg', '.jpeg', '.png', '.txt', '.webp'];
   const ext = path.extname(file.originalname).toLowerCase();
   if (allowedTypes.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only PDF, EPUB, JPG, PNG, TXT are allowed.'));
+    cb(new Error('Invalid file type. Only PDF, EPUB, JPG, PNG, WEBP, TXT are allowed.'));
   }
 };
 
@@ -42,11 +42,13 @@ const upload = multer({
 });
 
 // Upload new content (Librarian only)
-router.post('/upload', authMiddleware, checkRole(['librarian', 'admin']), upload.single('file'), async (req, res) => {
+router.post('/upload', authMiddleware, checkRole(['librarian', 'admin']), upload.fields([{ name: 'file', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), async (req, res) => {
   console.log('📤 Upload request received');
   
   try {
-    if (!req.file) {
+    const contentFile = req.files?.file?.[0];
+    const coverFile = req.files?.cover?.[0];
+    if (!contentFile) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
     
@@ -56,15 +58,16 @@ router.post('/upload', authMiddleware, checkRole(['librarian', 'admin']), upload
       return res.status(400).json({ message: 'Title and author are required' });
     }
     
-    const fileUrl = `/uploads/${req.file.filename}`;
+    const fileUrl = `/uploads/${contentFile.filename}`;
+    const coverImageUrl = coverFile ? `/uploads/${coverFile.filename}` : null;
     const keywordsArray = keywords ? keywords.split(',').map(k => k.trim()) : [];
     
     const result = await pool.query(
       `INSERT INTO digital_contents 
-       (title, author, subject, publication_year, keywords, file_url, access_level, uploaded_by, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft') 
+       (title, author, subject, publication_year, keywords, file_url, cover_image_url, access_level, uploaded_by, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'draft') 
        RETURNING *`,
-      [title, author, subject, year, keywordsArray, fileUrl, access_level || 'all', req.user.id]
+      [title, author, subject, year, keywordsArray, fileUrl, coverImageUrl, access_level || 'all', req.user.id]
     );
     
     res.status(201).json({ success: true, message: 'Content uploaded successfully', content: result.rows[0] });

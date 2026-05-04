@@ -153,6 +153,7 @@ async function setupDatabase() {
         publication_year INT,
         keywords TEXT[],
         file_url TEXT NOT NULL,
+        cover_image_url TEXT,
         thumbnail_url TEXT,
         status VARCHAR(20) DEFAULT 'draft',
         price DECIMAL(10,2) DEFAULT 0,
@@ -163,6 +164,12 @@ async function setupDatabase() {
       )
     `);
     console.log('✅ digital_contents table created');
+
+    await pool.query(`
+      ALTER TABLE digital_contents
+      ADD COLUMN IF NOT EXISTS cover_image_url TEXT
+    `);
+    console.log('✅ digital_contents.cover_image_url column ensured');
     
     // Create digital_borrows table
     await pool.query(`

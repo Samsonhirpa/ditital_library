@@ -23,6 +23,7 @@ function LibrarianDashboard() {
     access_level: 'all'
   });
   const [file, setFile] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [myUploads, setMyUploads] = useState([]);
@@ -67,6 +68,7 @@ function LibrarianDashboard() {
     
     const formData = new FormData();
     formData.append('file', file);
+    if (coverFile) formData.append('cover', coverFile);
     formData.append('title', uploadData.title);
     formData.append('author', uploadData.author);
     formData.append('subject', uploadData.subject);
@@ -93,6 +95,7 @@ function LibrarianDashboard() {
           access_level: 'all'
         });
         setFile(null);
+        setCoverFile(null);
         fetchMyUploads();
       } else {
         setMessage({ type: 'error', text: response.data.message || 'Upload failed' });
@@ -280,6 +283,22 @@ function LibrarianDashboard() {
                     </label>
                   </div>
                   <small>Supported formats: PDF, EPUB, JPG, PNG (Max 50MB)</small>
+                </div>
+
+                <div className="form-group">
+                  <label>Cover Image (optional)</label>
+                  <div className="file-input-wrapper">
+                    <input
+                      type="file"
+                      id="cover-upload"
+                      onChange={(e) => setCoverFile(e.target.files[0])}
+                      accept=".jpg,.jpeg,.png,.webp"
+                    />
+                    <label htmlFor="cover-upload" className="file-label">
+                      {coverFile ? coverFile.name : 'Choose cover image...'}
+                    </label>
+                  </div>
+                  <small>Supported formats: JPG, PNG, WEBP</small>
                 </div>
               </div>
 

@@ -10,6 +10,7 @@ function LandingPage() {
   const [publishedBooks, setPublishedBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const backendBaseUrl = api.defaults.baseURL.replace(/\/api$/, '');
 
   useEffect(() => {
     fetchPublishedBooks();
@@ -198,7 +199,7 @@ function LandingPage() {
               textAlign: 'center', 
               padding: '3rem', 
               background: 'white', 
-              borderRadius: '12px',
+              borderRadius: '10px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
             }}>
               <p>No resources found. Check back soon for new additions!</p>
@@ -206,15 +207,15 @@ function LandingPage() {
           ) : (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
               gap: '2rem'
             }}>
               {filteredBooks.map((book) => (
                 <div key={book.id} style={{
                   background: 'white',
-                  borderRadius: '12px',
+                  borderRadius: '10px',
                   overflow: 'hidden',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
                   transition: 'transform 0.3s, box-shadow 0.3s'
                 }}
                 onMouseEnter={(e) => {
@@ -226,15 +227,23 @@ function LandingPage() {
                   e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
                 }}>
                   <div style={{
-                    height: '180px',
-                    background: 'linear-gradient(135deg, #2c5f8a 0%, #1e3a5f 100%)',
+                    height: '260px',
+                    background: '#f3f3f3',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '3.5rem',
-                    position: 'relative'
+                    position: 'relative',
+                    borderBottom: '1px solid #eee'
                   }}>
-                    <span>📖</span>
+                    {book.cover_image_url ? (
+                      <img
+                        src={`${backendBaseUrl}${book.cover_image_url}`}
+                        alt={`${book.title} cover`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: '3.2rem' }}>📘</span>
+                    )}
                     {book.price > 0 && (
                       <span style={{
                         position: 'absolute',
