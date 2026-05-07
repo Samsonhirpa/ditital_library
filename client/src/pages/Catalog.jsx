@@ -1,229 +1,162 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import TopNavbar from '../components/Layout/TopNavbar';
 import Footer from '../components/Layout/Footer';
+import { Document, Page, pdfjs } from 'react-pdf';
+import { 
+  FiSearch, FiX, FiBookOpen, FiDownload, 
+  FiShoppingCart, FiEye, FiChevronLeft, FiChevronRight,
+  FiMaximize, FiMinimize, FiUser, FiBook, FiFilter
+} from 'react-icons/fi';
 import './Catalog.css';
 
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
 function Catalog() {
-  const { isAuthenticated, user } = useAuth();
-  const [contents, setContents] = useState([]);
+  const { isAuthenticated } = useAuth();
+  const [books, setBooks] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTitle, setSearchTitle] = useState('');
-  const [searchAuthor, setSearchAuthor] = useState('');
-  const [searchSubject, setSearchSubject] = useState('');
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [showReader, setShowReader] = useState(false);
+  const [numPages, setNumPages] = useState(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pdfScale, setPdfScale] = useState(1.0);
   const [purchasedStatus, setPurchasedStatus] = useState({});
   
-  // Payment modal states
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedBook, setSelectedBook] = useState(null);
-  const [paymentDetails, setPaymentDetails] = useState({
-    amount: '',
-    transaction_id: '',
-    notes: '',
-    receipt: null
-  });
-  const [uploading, setUploading] = useState(false);
+  // Filter states
+  const [titleFilter, setTitleFilter] = useState('');
+  const [authorFilter, setAuthorFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+
+  const BACKEND_URL = 'http://localhost:5000';
 
   useEffect(() => {
-    fetchContents();
+    fetchBooks();
   }, []);
 
-  // Check purchase status for all books when user is authenticated
   useEffect(() => {
-    if (isAuthenticated && contents.length > 0) {
+    if (isAuthenticated && books.length > 0) {
       checkPurchaseStatus();
     }
-  }, [isAuthenticated, contents]);
+  }, [isAuthenticated, books]);
+
+  const fetchBooks = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/contents/search');
+      setBooks(response.data);
+      setFilteredBooks(response.data);
+    } catch (error) {
+      console.error('Failed to fetch books:', error);
+    }
+    setLoading(false);
+  };
 
   const checkPurchaseStatus = async () => {
     const statusMap = {};
-    for (const book of contents) {
+    for (const book of books) {
       try {
-        const response = await api.get(`/contents/check-purchase/${book.id}`);
-        statusMap[book.id] = response.data.purchased;
+        const response = await api.get(`/payments/can-download/${book.id}`);
+        statusMap[book.id] = response.data.isPurchased;
       } catch (error) {
-        console.error(`Failed to check purchase for book ${book.id}:`, error);
         statusMap[book.id] = false;
       }
     }
     setPurchasedStatus(statusMap);
   };
 
-  const fetchContents = async () => {
-    setLoading(true);
+  const handleDownload = async (contentId) => {
     try {
-      const response = await api.get('/contents/search');
-      setContents(response.data);
+      const response = await api.get(`/contents/download/${contentId}`);
+      if (response.data.downloadUrl) {
+        window.open(`${BACKEND_URL}${response.data.downloadUrl}`, '_blank');
+      }
     } catch (error) {
-      console.error('Failed to fetch contents:', error);
-    } finally {
-      setLoading(false);
+      alert('Download failed: ' + (error.response?.data?.message || 'You may not have purchased this book'));
     }
   };
 
-  const handleSearch = async () => {
-    setLoading(true);
-    try {
-      const params = {};
-      if (searchTitle) params.title = searchTitle;
-      if (searchAuthor) params.author = searchAuthor;
-      if (searchSubject) params.subject = searchSubject;
-      
-      const response = await api.get('/contents/search', { params });
-      setContents(response.data);
-    } catch (error) {
-      console.error('Search failed:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handlePurchase = (bookId) => {
+    window.location.href = `/checkout/${bookId}`;
   };
 
-  const handleReset = () => {
-    setSearchTitle('');
-    setSearchAuthor('');
-    setSearchSubject('');
-    fetchContents();
-  };
-
-  const handleBorrow = async (contentId) => {
-    if (!isAuthenticated) {
-      alert('Please login first to borrow books');
-      return;
-    }
-    try {
-      await api.post(`/borrow/${contentId}`);
-      alert('Book borrowed successfully! You can now download it from My Account.');
-    } catch (error) {
-      alert(error.response?.data?.message || 'Borrow failed. You may have already borrowed this book.');
-    }
-  };
-const handleDownload = async (contentId) => {
-    try {
-        console.log('Downloading purchased book:', contentId);
-        const response = await api.get(`/contents/download/${contentId}`);
-        
-        if (response.data.downloadUrl) {
-            const downloadUrl = `http://localhost:5000${response.data.downloadUrl}`;
-            window.open(downloadUrl, '_blank');
-        } else {
-            alert('Download URL not available');
-        }
-    } catch (error) {
-        console.error('Download error:', error);
-        alert('Download failed: ' + (error.response?.data?.message || 'You may not have purchased this book'));
-    }
-};
-
-  const handlePurchaseWithReceipt = (book) => {
+  const handleReadOnline = (book) => {
     setSelectedBook(book);
-    setPaymentDetails({
-      amount: book.price,
-      transaction_id: '',
-      notes: '',
-      receipt: null
-    });
-    setShowPaymentModal(true);
+    setShowReader(true);
+    setPageNumber(1);
+    setNumPages(null);
   };
 
-  const handleReceiptUpload = async (e) => {
-    e.preventDefault();
-    if (!paymentDetails.receipt) {
-      alert('Please select a receipt file');
-      return;
-    }
-    
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('receipt', paymentDetails.receipt);
-    formData.append('content_id', selectedBook.id);
-    formData.append('amount', paymentDetails.amount);
-    formData.append('transaction_id', paymentDetails.transaction_id);
-    formData.append('notes', paymentDetails.notes);
-    
-    try {
-      await api.post('/payments/upload-receipt', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      alert('Receipt uploaded successfully! Waiting for manager approval.');
-      setShowPaymentModal(false);
-      setPaymentDetails({ amount: '', transaction_id: '', notes: '', receipt: null });
-    } catch (error) {
-      alert('Failed to upload receipt. Please try again.');
-    } finally {
-      setUploading(false);
-    }
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
   };
-// Add this function to check purchase status on page load
-const checkAllPurchaseStatus = async () => {
-  if (!isAuthenticated) return;
-  
-  const statusMap = {};
-  for (const book of contents) {
-    try {
-      const response = await api.get(`/payments/can-download/${book.id}`);
-      statusMap[book.id] = response.data.isPurchased;
-    } catch (error) {
-      statusMap[book.id] = false;
+
+  const changePage = (offset) => {
+    setPageNumber(prev => prev + offset);
+  };
+
+  const zoomIn = () => setPdfScale(prev => Math.min(prev + 0.2, 2.5));
+  const zoomOut = () => setPdfScale(prev => Math.max(prev - 0.2, 0.5));
+
+  const uniqueAuthors = useMemo(() => {
+    const authors = books.map(b => b.author).filter(Boolean);
+    return [...new Set(authors)];
+  }, [books]);
+
+  const uniqueCategories = useMemo(() => {
+    const cats = books.map(b => b.subject).filter(Boolean);
+    return [...new Set(cats)];
+  }, [books]);
+
+  useEffect(() => {
+    let result = [...books];
+
+    if (titleFilter) {
+      result = result.filter(book =>
+        book.title.toLowerCase().includes(titleFilter.toLowerCase())
+      );
     }
-  }
-  setPurchasedStatus(statusMap);
-};
 
-// Call this after fetching contents
-useEffect(() => {
-  if (contents.length > 0 && isAuthenticated) {
-    checkAllPurchaseStatus();
-  }
-}, [contents, isAuthenticated]);
+    if (authorFilter) {
+      result = result.filter(book =>
+        book.author.toLowerCase().includes(authorFilter.toLowerCase())
+      );
+    }
 
-  // Determine what button to show for a book
-  const getActionButton = (book) => {
+    if (categoryFilter) {
+      result = result.filter(book =>
+        book.subject?.toLowerCase() === categoryFilter.toLowerCase()
+      );
+    }
+
+    setFilteredBooks(result);
+  }, [titleFilter, authorFilter, categoryFilter, books]);
+
+  const getButtonAction = (book) => {
     if (!isAuthenticated) {
-      return (
-        <button 
-          onClick={() => alert('Please login first')}
-          className="borrow-btn disabled"
-        >
-          Login to Access
-        </button>
-      );
+      return { text: 'Sign in', action: () => window.location.href = '/login', icon: <FiEye size={14} />, class: 'login-btn' };
     }
-
-    // If user has purchased this book, show Download button
+    
     if (purchasedStatus[book.id]) {
-      return (
-        <button
-          onClick={() => handleDownload(book.id)}
-          className="borrow-btn download"
-        >
-          ⬇️ Download
-        </button>
-      );
+      return { text: 'Download', action: () => handleDownload(book.id), icon: <FiDownload size={14} />, class: 'download-btn' };
     }
-
-    // If book is paid, show Purchase button
-    if (book.price > 0) {
-      return (
-        <button
-          onClick={() => handlePurchaseWithReceipt(book)}
-          className="borrow-btn purchase"
-        >
-          💰 Purchase
-        </button>
-      );
+    
+    if (Number(book.price) > 0) {
+      return { text: `Buy $${book.price}`, action: () => handlePurchase(book.id), icon: <FiShoppingCart size={14} />, class: 'purchase-btn' };
     }
-
-    // Free book - show Borrow button
-    return (
-      <button
-        onClick={() => handleBorrow(book.id)}
-        className="borrow-btn borrow"
-      >
-        📖 Borrow Now
-      </button>
-    );
+    
+    return { text: 'Read Free', action: () => handleReadOnline(book), icon: <FiBookOpen size={14} />, class: 'free-btn' };
   };
+
+  const clearFilters = () => {
+    setTitleFilter('');
+    setAuthorFilter('');
+    setCategoryFilter('');
+  };
+
+  const hasActiveFilters = titleFilter || authorFilter || categoryFilter;
 
   return (
     <>
@@ -231,165 +164,152 @@ useEffect(() => {
       <div className="catalog-page">
         <div className="catalog-container">
           <div className="catalog-header">
-            <h1 className="catalog-title">Library Catalog</h1>
-            <p className="catalog-subtitle">
-              Browse our collection of Oromo research materials and digital resources
-            </p>
+            <h1>Digital Library</h1>
+            <p>Discover thousands of books from Oromo studies, history, culture, and academic research</p>
           </div>
 
-          {/* Search Filters */}
-          <div className="search-section">
-            <div className="search-grid">
-              <input
-                type="text"
-                placeholder="Search by title..."
-                value={searchTitle}
-                onChange={(e) => setSearchTitle(e.target.value)}
-                className="search-input"
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <input
-                type="text"
-                placeholder="Search by author..."
-                value={searchAuthor}
-                onChange={(e) => setSearchAuthor(e.target.value)}
-                className="search-input"
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <input
-                type="text"
-                placeholder="Search by subject..."
-                value={searchSubject}
-                onChange={(e) => setSearchSubject(e.target.value)}
-                className="search-input"
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </div>
-            <div className="search-actions">
-              <button onClick={handleSearch} className="search-btn">
-                🔍 Search
-              </button>
-              <button onClick={handleReset} className="reset-btn">
-                Reset
-              </button>
-            </div>
-          </div>
+          <div className="catalog-layout">
+            {/* Sidebar Filters */}
+            <aside className="catalog-sidebar">
+              <div className="sidebar-header">
+                <h3><FiFilter size={16} /> Filters</h3>
+                {hasActiveFilters && (
+                  <button className="clear-filters" onClick={clearFilters}>
+                    Clear all
+                  </button>
+                )}
+              </div>
 
-          {/* Results Count */}
-          <div className="results-count">
-            Found <strong>{contents.length}</strong> resource(s)
-          </div>
+              <div className="filter-group">
+                <label><FiSearch size={14} /> Search by Title</label>
+                <input
+                  type="text"
+                  placeholder="Enter book title..."
+                  value={titleFilter}
+                  onChange={(e) => setTitleFilter(e.target.value)}
+                />
+              </div>
 
-          {/* Loading State */}
-          {loading && (
-            <div className="loading-state">
-              <div className="spinner"></div>
-              <p>Loading books...</p>
-            </div>
-          )}
-
-          {/* No Results */}
-          {!loading && contents.length === 0 && (
-            <div className="empty-state">
-              <div className="empty-icon">📚</div>
-              <h3>No books found</h3>
-              <p>Check back later for new additions!</p>
-            </div>
-          )}
-
-          {/* Books Grid */}
-          {!loading && contents.length > 0 && (
-            <div className="books-grid">
-              {contents.map((book) => (
-                <div key={book.id} className="book-card">
-                  <div className="book-cover">
-                    {purchasedStatus[book.id] ? '✅' : '📚'}
-                  </div>
-                  <div className="book-details">
-                    <h3 className="book-title">
-                      {book.title}
-                      {purchasedStatus[book.id] && <span className="owned-badge">Owned</span>}
-                    </h3>
-                    <p className="book-author">
-                      <strong>Author:</strong> {book.author}
-                    </p>
-                    {book.subject && (
-                      <p className="book-subject">
-                        <strong>Subject:</strong> {book.subject}
-                      </p>
-                    )}
-                    {book.publication_year && (
-                      <p className="book-year">
-                        Year: {book.publication_year}
-                      </p>
-                    )}
-                    <div className="book-footer">
-                      <span className={`book-price ${book.price > 0 ? 'paid' : 'free'}`}>
-                        {book.price > 0 ? `$${book.price}` : 'FREE'}
-                      </span>
-                      {getActionButton(book)}
-                    </div>
-                  </div>
+              <div className="filter-group">
+                <label><FiUser size={14} /> Filter by Author</label>
+                <div className="filter-tags">
+                  {uniqueAuthors.map(author => (
+                    <button
+                      key={author}
+                      className={`filter-tag ${authorFilter === author ? 'active' : ''}`}
+                      onClick={() => setAuthorFilter(authorFilter === author ? '' : author)}
+                    >
+                      {author}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+
+              <div className="filter-group">
+                <label><FiBook size={14} /> Filter by Category</label>
+                <div className="filter-tags">
+                  {uniqueCategories.map(cat => (
+                    <button
+                      key={cat}
+                      className={`filter-tag ${categoryFilter === cat ? 'active' : ''}`}
+                      onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="filter-results">
+                <span className="results-badge">{filteredBooks.length} books found</span>
+              </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className="catalog-main">
+              {loading ? (
+                <div className="loading-container">
+                  <div className="spinner"></div>
+                  <p>Loading books...</p>
+                </div>
+              ) : filteredBooks.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">📖</div>
+                  <h3>No books found</h3>
+                  <p>Try adjusting your filters</p>
+                </div>
+              ) : (
+                <div className="books-grid">
+                  {filteredBooks.map((book) => {
+                    const coverUrl = book.cover_image_url ? `${BACKEND_URL}${book.cover_image_url}` : null;
+                    const button = getButtonAction(book);
+                    
+                    return (
+                      <div key={book.id} className="book-card">
+                        <div className="book-cover">
+                          {coverUrl ? (
+                            <img src={coverUrl} alt={book.title} />
+                          ) : (
+                            <div className="cover-placeholder">📚</div>
+                          )}
+                          {Number(book.price) === 0 && <span className="free-badge">FREE</span>}
+                        </div>
+                        <div className="book-button">
+                          <button className={`action-btn ${button.class}`} onClick={button.action}>
+                            {button.icon}
+                            {button.text}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </main>
+          </div>
         </div>
       </div>
 
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Upload Payment Receipt</h2>
-              <button className="close-modal" onClick={() => setShowPaymentModal(false)}>×</button>
+      {/* PDF Reader Modal */}
+      {showReader && selectedBook && (
+        <div className="reader-modal-overlay" onClick={() => setShowReader(false)}>
+          <div className="reader-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="reader-header">
+              <div className="reader-title">
+                <h3>{selectedBook.title}</h3>
+                <p>by {selectedBook.author}</p>
+              </div>
+              <div className="reader-controls">
+                <button onClick={zoomOut} className="reader-control-btn"><FiMinimize size={18} /></button>
+                <span className="zoom-level">{Math.round(pdfScale * 100)}%</span>
+                <button onClick={zoomIn} className="reader-control-btn"><FiMaximize size={18} /></button>
+                <div className="page-nav">
+                  <button onClick={() => changePage(-1)} disabled={pageNumber <= 1} className="nav-btn">
+                    <FiChevronLeft size={18} />
+                  </button>
+                  <span className="page-info">Page {pageNumber} of {numPages || '?'}</span>
+                  <button onClick={() => changePage(1)} disabled={pageNumber >= numPages} className="nav-btn">
+                    <FiChevronRight size={18} />
+                  </button>
+                </div>
+                <button onClick={() => handleDownload(selectedBook.id)} className="reader-download-btn">
+                  <FiDownload size={18} />
+                </button>
+                <button onClick={() => setShowReader(false)} className="reader-close-btn">
+                  <FiX size={20} />
+                </button>
+              </div>
             </div>
-            <form onSubmit={handleReceiptUpload}>
-              <div className="payment-form-group">
-                <label>Book</label>
-                <input type="text" value={selectedBook?.title} disabled />
-              </div>
-              <div className="payment-form-group">
-                <label>Amount (USD)</label>
-                <input 
-                  type="number" 
-                  value={paymentDetails.amount} 
-                  disabled 
-                />
-              </div>
-              <div className="payment-form-group">
-                <label>Transaction ID / Reference Number</label>
-                <input 
-                  type="text" 
-                  placeholder="Enter transaction ID"
-                  value={paymentDetails.transaction_id}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, transaction_id: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="payment-form-group">
-                <label>Upload Receipt (Image or PDF)</label>
-                <input 
-                  type="file" 
-                  accept=".jpg,.jpeg,.png,.pdf"
-                  onChange={(e) => setPaymentDetails({...paymentDetails, receipt: e.target.files[0]})}
-                  required
-                />
-              </div>
-              <div className="payment-form-group">
-                <label>Notes (Optional)</label>
-                <textarea 
-                  rows="3"
-                  placeholder="Any additional information..."
-                  value={paymentDetails.notes}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, notes: e.target.value})}
-                />
-              </div>
-              <button type="submit" className="submit-payment-btn" disabled={uploading}>
-                {uploading ? 'Uploading...' : 'Submit Receipt'}
-              </button>
-            </form>
+            <div className="reader-content">
+              <Document
+                file={`${BACKEND_URL}${selectedBook.file_url}`}
+                onLoadSuccess={onDocumentLoadSuccess}
+                loading={<div className="pdf-loading">Loading PDF...</div>}
+                error={<div className="pdf-error">Failed to load PDF</div>}
+              >
+                <Page pageNumber={pageNumber} scale={pdfScale} renderTextLayer renderAnnotationLayer />
+              </Document>
+            </div>
           </div>
         </div>
       )}

@@ -6,7 +6,7 @@ import DashboardLayout from '../components/Layout/DashboardLayout';
 import { 
   FiUpload, FiList, FiBarChart2, FiFile, FiUser, 
   FiCalendar, FiEye, FiDownload, FiCheckCircle, 
-  FiClock, FiTrendingUp, FiBookOpen
+  FiClock, FiTrendingUp, FiBookOpen, FiImage, FiX
 } from 'react-icons/fi';
 import './LibrarianDashboard.css';
 
@@ -24,6 +24,7 @@ function LibrarianDashboard() {
   });
   const [file, setFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [myUploads, setMyUploads] = useState([]);
@@ -55,6 +56,30 @@ function LibrarianDashboard() {
     setLoading(false);
   };
 
+  const handleCoverChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(selectedFile.type)) {
+        setMessage({ type: 'error', text: 'Please select a valid image file (JPG, PNG, WEBP)' });
+        e.target.value = '';
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        setMessage({ type: 'error', text: 'Cover image must be less than 5MB' });
+        e.target.value = '';
+        return;
+      }
+      
+      setCoverFile(selectedFile);
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(selectedFile);
+      setCoverPreview(previewUrl);
+    }
+  };
+
   const handleUpload = async (e) => {
     e.preventDefault();
     
@@ -68,7 +93,9 @@ function LibrarianDashboard() {
     
     const formData = new FormData();
     formData.append('file', file);
-    if (coverFile) formData.append('cover', coverFile);
+    if (coverFile) {
+      formData.append('cover', coverFile);
+    }
     formData.append('title', uploadData.title);
     formData.append('author', uploadData.author);
     formData.append('subject', uploadData.subject);
@@ -84,7 +111,7 @@ function LibrarianDashboard() {
       if (response.data.success) {
         await api.put(`/contents/${response.data.content.id}/submit`);
         
-        setMessage({ type: 'success', text: 'Content uploaded and submitted for approval successfully!' });
+        setMessage({ type: 'success', text: '✅ Content uploaded and submitted for approval successfully!' });
         
         setUploadData({
           title: '',
@@ -96,7 +123,14 @@ function LibrarianDashboard() {
         });
         setFile(null);
         setCoverFile(null);
+        setCoverPreview(null);
         fetchMyUploads();
+        
+        // Clear file inputs
+        const fileInput = document.getElementById('file-upload');
+        const coverInput = document.getElementById('cover-upload');
+        if (fileInput) fileInput.value = '';
+        if (coverInput) coverInput.value = '';
       } else {
         setMessage({ type: 'error', text: response.data.message || 'Upload failed' });
       }
@@ -191,7 +225,7 @@ function LibrarianDashboard() {
           <div className="upload-section">
             {message && (
               <div className={`message ${message.type}`}>
-                {message.type === 'success' ? '✅ ' : '❌ '}{message.text}
+                {message.text}
               </div>
             )}
             
@@ -291,14 +325,30 @@ function LibrarianDashboard() {
                     <input
                       type="file"
                       id="cover-upload"
-                      onChange={(e) => setCoverFile(e.target.files[0])}
+                      onChange={handleCoverChange}
                       accept=".jpg,.jpeg,.png,.webp"
                     />
                     <label htmlFor="cover-upload" className="file-label">
                       {coverFile ? coverFile.name : 'Choose cover image...'}
                     </label>
                   </div>
-                  <small>Supported formats: JPG, PNG, WEBP</small>
+                  {coverPreview && (
+                    <div className="cover-preview">
+                      <img src={coverPreview} alt="Cover preview" />
+                      <button 
+                        type="button" 
+                        className="remove-cover"
+                        onClick={() => {
+                          setCoverFile(null);
+                          setCoverPreview(null);
+                          document.getElementById('cover-upload').value = '';
+                        }}
+                      >
+                        <FiX size={16} />
+                      </button>
+                    </div>
+                  )}
+                  <small>Supported formats: JPG, PNG, WEBP. Max 5MB. Recommended size: 500x700px</small>
                 </div>
               </div>
 
@@ -327,6 +377,7 @@ function LibrarianDashboard() {
                 <table className="uploads-table">
                   <thead>
                     <tr>
+                      <th>Cover</th>
                       <th>Title</th>
                       <th>Author</th>
                       <th>Status</th>
@@ -337,6 +388,21 @@ function LibrarianDashboard() {
                   <tbody>
                     {myUploads.map((content) => (
                       <tr key={content.id}>
+                        <td className="cover-cell">
+                          {content.cover_image_url ? (
+                            <img 
+                              src={`http://localhost:5000${content.cover_image_url}`} 
+                              alt={content.title}
+                              className="table-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = '<div class="table-cover-placeholder">📚</div>';
+                              }}
+                            />
+                          ) : (
+                            <div className="table-cover-placeholder">📚</div>
+                          )}
+                        </td>
                         <td className="title-cell">
                           <FiBookOpen size={16} />
                           {content.title}

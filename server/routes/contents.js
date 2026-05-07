@@ -42,12 +42,27 @@ const upload = multer({
 });
 
 // Upload new content (Librarian only)
-router.post('/upload', authMiddleware, checkRole(['librarian', 'admin']), upload.fields([{ name: 'file', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), async (req, res) => {
+router.post('/upload', authMiddleware, checkRole(['librarian', 'admin']), (req, res, next) => {
+  // Use upload.fields to handle both file and cover
+  upload.fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'cover', maxCount: 1 }
+  ])(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ message: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   console.log('📤 Upload request received');
+  console.log('Files:', req.files);
+  console.log('Body:', req.body);
   
   try {
     const contentFile = req.files?.file?.[0];
     const coverFile = req.files?.cover?.[0];
+    
     if (!contentFile) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -62,18 +77,49 @@ router.post('/upload', authMiddleware, checkRole(['librarian', 'admin']), upload
     const coverImageUrl = coverFile ? `/uploads/${coverFile.filename}` : null;
     const keywordsArray = keywords ? keywords.split(',').map(k => k.trim()) : [];
     
-    const result = await pool.query(
-      `INSERT INTO digital_contents 
-       (title, author, subject, publication_year, keywords, file_url, cover_image_url, access_level, uploaded_by, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'draft') 
-       RETURNING *`,
-      [title, author, subject, year, keywordsArray, fileUrl, coverImageUrl, access_level || 'all', req.user.id]
-    );
+    // First check if cover_image_url column exists
+    const columnCheck = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'digital_contents' AND column_name = 'cover_image_url'
+    `);
     
+    let result;
+    
+    if (columnCheck.rows.length > 0 && coverImageUrl) {
+      // Column exists and we have a cover image
+      result = await pool.query(
+        `INSERT INTO digital_contents 
+         (title, author, subject, publication_year, keywords, file_url, cover_image_url, access_level, uploaded_by, status) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'draft') 
+         RETURNING *`,
+        [title, author, subject, year, keywordsArray, fileUrl, coverImageUrl, access_level || 'all', req.user.id]
+      );
+    } else if (columnCheck.rows.length > 0 && !coverImageUrl) {
+      // Column exists but no cover image
+      result = await pool.query(
+        `INSERT INTO digital_contents 
+         (title, author, subject, publication_year, keywords, file_url, cover_image_url, access_level, uploaded_by, status) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'draft') 
+         RETURNING *`,
+        [title, author, subject, year, keywordsArray, fileUrl, null, access_level || 'all', req.user.id]
+      );
+    } else {
+      // Column doesn't exist - insert without cover image
+      console.log('⚠️ cover_image_url column not found, inserting without cover');
+      result = await pool.query(
+        `INSERT INTO digital_contents 
+         (title, author, subject, publication_year, keywords, file_url, access_level, uploaded_by, status) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft') 
+         RETURNING *`,
+        [title, author, subject, year, keywordsArray, fileUrl, access_level || 'all', req.user.id]
+      );
+    }
+    
+    console.log('✅ Content inserted successfully, ID:', result.rows[0].id);
     res.status(201).json({ success: true, message: 'Content uploaded successfully', content: result.rows[0] });
   } catch (err) {
-    console.error('Upload error:', err);
-    res.status(500).json({ message: 'Upload failed', error: err.message });
+    console.error('❌ Upload error details:', err);
+    res.status(500).json({ message: 'Upload failed: ' + err.message });
   }
 });
 
@@ -98,7 +144,7 @@ router.put('/:id/submit', authMiddleware, checkRole(['librarian', 'admin']), asy
     
     res.json({ message: 'Content submitted for approval' });
   } catch (err) {
-    console.error(err);
+    console.error('Submit error:', err);
     res.status(500).json({ message: 'Submission failed' });
   }
 });
@@ -150,12 +196,12 @@ router.get('/my-uploads', authMiddleware, checkRole(['librarian', 'admin']), asy
     );
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error('Get uploads error:', err);
     res.status(500).json({ message: 'Failed to fetch uploads' });
   }
 });
 
-// DOWNLOAD PURCHASED BOOK - FIXED
+// DOWNLOAD PURCHASED BOOK
 router.get('/download/:contentId', authMiddleware, async (req, res) => {
   try {
     const { contentId } = req.params;
