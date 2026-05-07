@@ -1,0 +1,475 @@
+/* Catalog Page */
+.catalog-page {
+  margin-top: 70px;
+  min-height: calc(100vh - 70px);
+  background: #f8fafc;
+}
+
+.catalog-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Header */
+.catalog-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.catalog-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.catalog-header p {
+  font-size: 0.95rem;
+  color: #64748b;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Layout */
+.catalog-layout {
+  display: flex;
+  gap: 2rem;
+}
+
+/* Sidebar */
+.catalog-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: white;
+  border-radius: 16px;
+  padding: 1.25rem;
+  border: 1px solid #e2e8f0;
+  height: fit-content;
+  position: sticky;
+  top: 80px;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sidebar-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clear-filters {
+  background: none;
+  border: none;
+  color: #0096FF;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.clear-filters:hover {
+  text-decoration: underline;
+}
+
+.filter-group {
+  margin-bottom: 1.5rem;
+}
+
+.filter-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-group input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.filter-group input:focus {
+  outline: none;
+  border-color: #0096FF;
+  box-shadow: 0 0 0 2px rgba(0,150,255,0.1);
+}
+
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.filter-tag {
+  padding: 4px 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-tag:hover {
+  background: #e2e8f0;
+}
+
+.filter-tag.active {
+  background: #0096FF;
+  color: white;
+  border-color: #0096FF;
+}
+
+.filter-results {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.results-badge {
+  display: inline-block;
+  background: #e8f4ff;
+  color: #0096FF;
+  padding: 4px 12px;
+  borderRadius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Main Content */
+.catalog-main {
+  flex: 1;
+}
+
+/* Books Grid - Amazon Style */
+.books-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.5rem;
+}
+
+.book-card {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.book-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.book-cover {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  background: linear-gradient(135deg, #667eea 20%, #764ba2 100%);
+  overflow: hidden;
+}
+
+.book-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.book-card:hover .book-cover img {
+  transform: scale(1.03);
+}
+
+.cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  background: linear-gradient(135deg, #667eea 20%, #764ba2 100%);
+  color: white;
+}
+
+.free-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #10b981;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  z-index: 1;
+}
+
+.book-button {
+  padding: 0.75rem 0.5rem 0.75rem;
+  background: white;
+}
+
+.action-btn {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+}
+
+.free-btn {
+  background: #10b981;
+  color: white;
+}
+
+.free-btn:hover {
+  background: #059669;
+}
+
+.download-btn {
+  background: #0096FF;
+  color: white;
+}
+
+.download-btn:hover {
+  background: #0077cc;
+}
+
+.purchase-btn {
+  background: #e67e22;
+  color: white;
+}
+
+.purchase-btn:hover {
+  background: #d35400;
+}
+
+.login-btn {
+  background: #64748b;
+  color: white;
+}
+
+.login-btn:hover {
+  background: #475569;
+}
+
+/* Loading State */
+.loading-container {
+  text-align: center;
+  padding: 3rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #0096FF;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  background: white;
+  border-radius: 16px;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  font-size: 1rem;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.empty-state p {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+/* PDF Reader Modal */
+.reader-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reader-modal {
+  width: 95vw;
+  height: 95vh;
+  background: #1a1a2e;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.reader-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: #16213e;
+  border-bottom: 1px solid #0f3460;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.reader-title h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: white;
+}
+
+.reader-title p {
+  font-size: 0.7rem;
+  color: #a0aec0;
+}
+
+.reader-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.reader-control-btn, .reader-download-btn, .reader-close-btn {
+  background: #0f3460;
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reader-control-btn:hover, .reader-download-btn:hover {
+  background: #1a4a7a;
+}
+
+.reader-close-btn:hover {
+  background: #dc2626;
+}
+
+.zoom-level {
+  font-size: 0.7rem;
+  color: #a0aec0;
+  min-width: 45px;
+  text-align: center;
+}
+
+.page-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #0f3460;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 0.7rem;
+  color: white;
+  min-width: 80px;
+  text-align: center;
+}
+
+.reader-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  background: #2d2d44;
+}
+
+.pdf-loading, .pdf-error {
+  text-align: center;
+  padding: 2rem;
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .catalog-layout {
+    flex-direction: column;
+  }
+  
+  .catalog-sidebar {
+    width: 100%;
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .catalog-container {
+    padding: 1rem;
+  }
+  
+  .books-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+  
+  .reader-modal {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+}
